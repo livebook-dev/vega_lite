@@ -25,6 +25,8 @@ defmodule VegaLite do
 
   A simple line chart could be composed like this:
 
+      alias VegaLite, as: Vl
+
       Vl.new(width: 400, height: 400)
       |> Vl.data_from_series(x: 1..100, y: 1..100)
       |> Vl.mark(:line)
@@ -35,6 +37,8 @@ defmodule VegaLite do
 
   Alternatively you can parse a Vega-Lite JSON specification directly.
   This approach makes it easy to explore numerous examples available online.
+
+      alias VegaLite, as: Vl
 
       Vl.from_json(\"\"\"
       {
@@ -61,11 +65,11 @@ defmodule VegaLite do
       }
       \"\"\")
 
-  The result of `Vl.from_json/1` function can then be passed
+  The result of `VegaLite.from_json/1` function can then be passed
   through any other function to further customize the specification.
   In particular, it may be useful to parse a JSON specification
-  and add your custom data with `Vl.data_from_values/3`
-  or `Vl.data_from_series/3`.
+  and add your custom data with `VegaLite.data_from_values/3`
+  or `VegaLite.data_from_series/3`.
 
   ## Options
 
