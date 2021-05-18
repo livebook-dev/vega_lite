@@ -1,0 +1,340 @@
+# Vega-Lite
+
+## Setup
+
+```elixir
+import IEx.Helpers
+recompile()
+```
+
+```elixir
+alias VegaLite, as: Vl
+```
+
+## Examples
+
+```elixir
+Vl.from_json("""
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "description": "Stock prices of 5 Tech Companies over Time.",
+  "data": {"url": "https://vega.github.io/editor/data/stocks.csv"},
+  "mark": "trail",
+  "encoding": {
+    "x": {"field": "date", "type": "temporal"},
+    "y": {"field": "price", "type": "quantitative"},
+    "size": {"field": "price", "type": "quantitative"},
+    "color": {"field": "symbol", "type": "nominal"}
+  }
+}
+""")
+```
+
+```elixir
+# {
+#   "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+#   "description": "Stock prices of 5 Tech Companies over Time.",
+#   "data": {"url": "data/stocks.csv"},
+#   "mark": "trail",
+#   "encoding": {
+#     "x": {"field": "date", "type": "temporal"},
+#     "y": {"field": "price", "type": "quantitative"},
+#     "size": {"field": "price", "type": "quantitative"},
+#     "color": {"field": "symbol", "type": "nominal"}
+#   }
+# }
+
+Vl.new()
+|> Vl.data_from_url("https://vega.github.io/editor/data/stocks.csv", format: :csv)
+|> Vl.encode_field(:x, "date", type: :temporal)
+|> Vl.encode_field(:y, "price", type: :quantitative)
+|> Vl.encode_field(:size, "price", type: :quantitative)
+|> Vl.encode_field(:color, "symbol", type: :nominal)
+|> Vl.mark(:trail)
+```
+
+```elixir
+# {
+#   "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+#   "description": "A scatterplot showing body mass and flipper lengths of penguins.",
+#   "data": {
+#     "url": "data/penguins.json"
+#   },
+#   "mark": "point",
+#   "encoding": {
+#     "x": {
+#       "field": "Flipper Length (mm)",
+#       "type": "quantitative",
+#       "scale": {"zero": false}
+#     },
+#     "y": {
+#       "field": "Body Mass (g)",
+#       "type": "quantitative",
+#       "scale": {"zero": false}
+#     },
+#     "color": {"field": "Species", "type": "nominal"},
+#     "shape": {"field": "Species", "type": "nominal"}
+#   }
+# }
+
+Vl.new(title: "Penguins plot")
+|> Vl.data_from_url("https://vega.github.io/editor/data/penguins.json")
+|> Vl.encode_field(:x, "Flipper Length (mm)", type: :quantitative, scale: [zero: false])
+|> Vl.encode_field(:y, "Body Mass (g)", type: :quantitative, scale: [zero: false])
+|> Vl.encode_field(:color, "Species", type: :nominal)
+|> Vl.encode_field(:shape, "Species", type: :nominal)
+|> Vl.mark(:point)
+```
+
+```elixir
+Vl.from_json("""
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "description": "A scatterplot showing body mass and flipper lengths of penguins.",
+  "data": {
+    "url": "https://vega.github.io/editor/data/penguins.json"
+  },
+  "mark": "point",
+  "encoding": {
+    "x": {
+      "field": "Flipper Length (mm)",
+      "type": "quantitative",
+      "scale": {"zero": false}
+    },
+    "y": {
+      "field": "Body Mass (g)",
+      "type": "quantitative",
+      "scale": {"zero": false}
+    },
+    "color": {"field": "Species", "type": "nominal"},
+    "shape": {"field": "Species", "type": "nominal"}
+  }
+}
+""")
+```
+
+```elixir
+# {
+#   "data": {"url": "data/stocks.csv"},
+#   "layer": [
+#     {
+#       "mark": "line",
+#       "encoding": {
+#         "x": {"field": "date", "type": "temporal"},
+#         "y": {"field": "price", "type": "quantitative"},
+#         "color": {"field": "symbol", "type": "nominal"}
+#       }
+#     },
+#     {
+#       "mark": "rule",
+#       "encoding": {
+#         "y": {"field": "price", "aggregate": "mean"},
+#         "size": {"value": 2},
+#         "color": {"field": "symbol"}
+#       }
+#     }
+#   ]
+# }
+
+Vl.new()
+|> Vl.data_from_url("https://vega.github.io/editor/data/stocks.csv", format: :csv)
+|> Vl.layers([
+  Vl.new()
+  |> Vl.mark(:line)
+  |> Vl.encode_field(:x, "date", type: :temporal)
+  |> Vl.encode_field(:y, "price", type: :quantitative)
+  |> Vl.encode_field(:color, "symbol", type: :nominal),
+  Vl.new()
+  |> Vl.mark(:rule)
+  |> Vl.encode_field(:y, "price", aggregate: :mean)
+  |> Vl.encode(:size, value: 2)
+  |> Vl.encode_field(:color, "symbol", type: :nominal)
+])
+```
+
+```elixir
+# {
+#   "data": {
+#     "values": [
+#       {"a": "A", "b": 28},
+#       {"a": "B", "b": 55},
+#       {"a": "C", "b": 43},
+#       {"a": "G", "b": 19},
+#       {"a": "H", "b": 87},
+#       {"a": "I", "b": 52},
+#       {"a": "D", "b": 91},
+#       {"a": "E", "b": 81},
+#       {"a": "F", "b": 53}
+#     ]
+#   },
+#   "transform": [
+#     {"calculate": "2*datum.b", "as": "b2"},
+#     {"filter": "datum.b2 > 60"}
+#   ],
+#   "mark": "bar",
+#   "encoding": {
+#     "y": {"field": "b2", "type": "quantitative"},
+#     "x": {"field": "a", "type": "ordinal"}
+#   }
+# }
+
+data = [
+  %{"a" => "A", "b" => 28},
+  %{"a" => "B", "b" => 55},
+  %{"a" => "C", "b" => 43},
+  %{"a" => "G", "b" => 19},
+  %{"a" => "H", "b" => 87},
+  %{"a" => "I", "b" => 52},
+  %{"a" => "D", "b" => 91},
+  %{"a" => "E", "b" => 81},
+  %{"a" => "F", "b" => 53}
+]
+
+Vl.new()
+|> Vl.data_from_values(data)
+|> Vl.transform(calculate: "2 * datum.b", as: "b2")
+|> Vl.transform(filter: "datum.b2 > 60")
+|> Vl.mark(:bar)
+|> Vl.encode_field(:y, "b2", type: :quantitative)
+|> Vl.encode_field(:x, "a", type: :ordinal)
+```
+
+```elixir
+x = 1..100
+y = 1..100
+
+Vl.new(width: 400, height: 400)
+|> Vl.data_from_series(x: x, y: y)
+|> Vl.mark(:line)
+|> Vl.encode_field(:x, "x", type: :quantitative)
+|> Vl.encode_field(:y, "y", type: :quantitative)
+```
+
+```elixir
+# {
+#   "width": 500,
+#   "height": 300,
+#   "data": {
+#     "url": "data/airports.csv"
+#   },
+#   "projection": {
+#     "type": "albersUsa"
+#   },
+#   "mark": "circle",
+#   "encoding": {
+#     "longitude": {
+#       "field": "longitude",
+#       "type": "quantitative"
+#     },
+#     "latitude": {
+#       "field": "latitude",
+#       "type": "quantitative"
+#     },
+#     "size": {"value": 10}
+#   },
+#   "config": {
+#     "view": {
+#       "stroke": "transparent"
+#     }
+#   }
+# }
+
+Vl.new(width: 500, height: 300)
+|> Vl.data_from_url("https://vega.github.io/editor/data/airports.csv")
+|> Vl.projection(type: :albers_usa)
+|> Vl.mark(:circle)
+|> Vl.encode_field(:longitude, "longitude", type: :quantitative)
+|> Vl.encode_field(:latitude, "latitude", type: :quantitative)
+|> Vl.encode(:size, value: 10)
+|> Vl.config(:view, stroke: :transparent)
+```
+
+```elixir
+# {
+#   "data": {"url": "data/cars.json"},
+#   "facet": {"row": {"field": "Origin"}},
+#   "spec": {
+#     "mark": "bar",
+#     "encoding": {
+#       "x": {
+#         "bin": {"maxbins": 15},
+#         "field": "Horsepower",
+#         "type": "quantitative"
+#       },
+#       "y": {"aggregate": "count", "type": "quantitative"}
+#     }
+#   }
+# }
+
+Vl.new()
+|> Vl.data_from_url("https://vega.github.io/editor/data/cars.json")
+|> Vl.facet(
+  [row: [field: "Origin"]],
+  Vl.new()
+  |> Vl.mark(:bar)
+  |> Vl.encode_field(:x, "Horsepower", type: :quantitative, bin: [maxbins: 15])
+  |> Vl.encode(:y, aggregate: :count, type: :quantitative)
+)
+```
+
+```elixir
+# {
+#   "data": {"url": "data/penguins.json"},
+#   "repeat": {
+#     "row": [
+#       "Beak Length (mm)",
+#       "Beak Depth (mm)",
+#       "Flipper Length (mm)",
+#       "Body Mass (g)"
+#     ],
+#     "column": [
+#       "Body Mass (g)",
+#       "Flipper Length (mm)",
+#       "Beak Depth (mm)",
+#       "Beak Length (mm)"
+#     ]
+#   },
+#   "spec": {
+#     "width": 150,
+#     "height": 150,
+#     "mark": "point",
+#     "encoding": {
+#       "x": {
+#         "field": {"repeat": "column"},
+#         "type": "quantitative",
+#         "scale": {"zero": false}
+#       },
+#       "y": {
+#         "field": {"repeat": "row"},
+#         "type": "quantitative",
+#         "scale": {"zero": false}
+#       },
+#       "color": {"field": "Species", "type": "nominal"}
+#     }
+#   }
+# }
+
+Vl.new()
+|> Vl.data_from_url("https://vega.github.io/editor/data/penguins.json")
+|> Vl.repeat(
+  [
+    row: [
+      "Beak Length (mm)",
+      "Beak Depth (mm)",
+      "Flipper Length (mm)",
+      "Body Mass (g)"
+    ],
+    column: [
+      "Body Mass (g)",
+      "Flipper Length (mm)",
+      "Beak Depth (mm)",
+      "Beak Length (mm)"
+    ]
+  ],
+  Vl.new(width: 150, height: 150)
+  |> Vl.mark(:point)
+  |> Vl.encode_repeat(:x, :column, type: :quantitative, scale: [zero: false])
+  |> Vl.encode_repeat(:y, :row, type: :quantitative, scale: [zero: false])
+  |> Vl.encode_field(:color, "Species", type: :nominal)
+)
+```
