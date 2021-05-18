@@ -631,6 +631,6 @@ defmodule VegaLite do
 
   defp snake_to_camel(string) do
     [part | parts] = String.split(string, "_")
-    Enum.join([String.downcase(part) | Enum.map(parts, &String.capitalize/1)])
+    Enum.join([String.downcase(part, :ascii) | Enum.map(parts, &String.capitalize(&1, :ascii))])
   end
 end
