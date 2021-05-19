@@ -6,17 +6,27 @@ defmodule VegaLite.MixProject do
       app: :vega_lite,
       version: "0.1.0-dev",
       elixir: "~> 1.11",
-      deps: deps()
+      deps: deps(),
+      docs: docs()
     ]
   end
 
   def application do
-    [extra_applications: [:logger]]
+    []
   end
 
   defp deps do
     [
-      {:jason, "~> 1.2"}
+      {:jason, "~> 1.2"},
+      {:ex_doc, "~> 0.24", only: :dev, runtime: false}
+    ]
+  end
+
+  defp docs do
+    [
+      main: "VegaLite",
+      source_url: "https://github.com/jonatanklosko/vega_lite",
+      source_ref: "main"
     ]
   end
 end
