@@ -524,7 +524,7 @@ defmodule VegaLite do
   end
 
   @mark_types ~w(
-    arc area bar boxplot circle errorband errorbar geoshape image line point rec rule square text tick trail
+    arc area bar boxplot circle errorband errorbar geoshape image line point rect rule square text tick trail
   )a
 
   @doc """
