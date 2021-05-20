@@ -1,6 +1,7 @@
 # VegaLite
 
-[![](https://img.shields.io/badge/docs-gray.svg)](https://static.jonatanklosko.com/docs/vega_lite)
+[![Actions Status](https://github.com/elixir-nx/vega_lite/workflows/Test/badge.svg)](https://github.com/elixir-nx/vega_lite/actions)
+[![Docs](https://img.shields.io/badge/docs-gray.svg)](https://static.jonatanklosko.com/docs/vega_lite)
 
 **Note: this is currently experimental**
 

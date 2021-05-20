@@ -5,7 +5,7 @@ defmodule VegaLite.MixProject do
     [
       app: :vega_lite,
       version: "0.1.0-dev",
-      elixir: "~> 1.11",
+      elixir: "~> 1.7",
       deps: deps(),
       docs: docs()
     ]
