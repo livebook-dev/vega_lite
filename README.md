@@ -15,7 +15,7 @@ you will have to use a Git dependency until we publish the first release:
 ```elixir
 def deps do
   [
-    {:vega_lite, "~> 0.1.0-dev", github: "jonatanklosko/vega_lite", branch: "main"}
+    {:vega_lite, "~> 0.1.0-dev", github: "elixir-nx/vega_lite", branch: "main"}
   ]
 end
 ```
@@ -25,7 +25,7 @@ in which case you can call `Mix.install/2`:
 
 ```elixir
 Mix.install([
-  {:vega_lite, "~> 0.1.0-dev", github: "jonatanklosko/vega_lite", branch: "main"}
+  {:vega_lite, "~> 0.1.0-dev", github: "elixir-nx/vega_lite", branch: "main"}
 ])
 ```
 
