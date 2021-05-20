@@ -373,7 +373,7 @@ defmodule VegaLite do
 
   defp validate_inclusion!(list, value, name) do
     if value not in list do
-      list_str = @channels |> Enum.map(&inspect/1) |> Enum.join(", ")
+      list_str = list |> Enum.map(&inspect/1) |> Enum.join(", ")
 
       raise ArgumentError,
             "unknown #{name}, expected one of #{list_str}, got: #{inspect(value)}"
@@ -496,7 +496,7 @@ defmodule VegaLite do
 
   def mark(vl, type, []) do
     validate_blank_view!(vl, "cannot add mark to the view")
-    validate_mark_type!(type)
+    validate_inclusion!(@mark_types, type, "mark type")
 
     update_in(vl.spec, fn spec ->
       vl_type = to_vl_key(type)
@@ -506,7 +506,7 @@ defmodule VegaLite do
 
   def mark(vl, type, opts) do
     validate_blank_view!(vl, "cannot add mark to the view")
-    validate_mark_type!(type)
+    validate_inclusion!(@mark_types, type, "mark type")
 
     update_in(vl.spec, fn spec ->
       vl_type = to_vl_key(type)
@@ -518,15 +518,6 @@ defmodule VegaLite do
 
       Map.put(spec, "mark", vl_props)
     end)
-  end
-
-  defp validate_mark_type!(type) do
-    if type not in @mark_types do
-      types_str = @mark_types |> Enum.map(&inspect/1) |> Enum.join(", ")
-
-      raise ArgumentError,
-            "unknown mark type, expected one of #{types_str}, got: #{inspect(type)}"
-    end
   end
 
   @doc """
@@ -930,10 +921,8 @@ defmodule VegaLite do
     end
 
     for key <- @multi_view_only_keys, Map.has_key?(vl.spec, to_vl_key(key)) do
-      if Map.has_key?(vl.spec, key) do
-        raise ArgumentError,
-              "#{error_message}, because it is already a multi-view specification (has the #{inspect(key)} key defined)"
-      end
+      raise ArgumentError,
+            "#{error_message}, because it is already a multi-view specification (has the #{inspect(key)} key defined)"
     end
   end
 
@@ -1008,14 +997,18 @@ defmodule VegaLite do
 
   defp to_vl(map) when is_map(map) do
     Map.new(map, fn {key, value} ->
-      {to_vl_key(key), to_vl(value)}
+      {to_vl(key), to_vl(value)}
     end)
   end
 
   defp to_vl([{key, _} | _] = keyword) when is_atom(key) do
     Map.new(keyword, fn {key, value} ->
-      {to_vl_key(key), to_vl(value)}
+      {to_vl(key), to_vl(value)}
     end)
+  end
+
+  defp to_vl(list) when is_list(list) do
+    Enum.map(list, &to_vl/1)
   end
 
   defp to_vl(value), do: value
