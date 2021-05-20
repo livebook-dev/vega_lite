@@ -129,6 +129,9 @@ defmodule VegaLite do
     update_in(vl.spec, fn spec -> Map.merge(spec, vl_props) end)
   end
 
+  @compile {:no_warn_undefined, {Jason, :decode!, 1}}
+  @compile {:no_warn_undefined, {Jason, :encode!, 1}}
+
   @doc """
   Parses the given Vega-Lite JSON specification
   and wraps in the `VegaLite` struct for further processing.
@@ -151,7 +154,59 @@ defmodule VegaLite do
   """
   @spec from_json(String.t()) :: t()
   def from_json(json) do
-    spec = Jason.decode!(json)
+    assert_jason!("from_json/1")
+
+    json
+    |> Jason.decode!()
+    |> from_spec()
+  end
+
+  @doc """
+  Returns the underlying Vega-Lite specification as JSON.
+
+  ## Examples
+
+      Vl.new()
+      |> Vl.data_from_values(...)
+      |> Vl.mark(...)
+      |> Vl.encode_field(...)
+      |> Vl.to_json()
+
+  See [the docs](https://vega.github.io/vega-lite/docs/spec.html) for more details.
+  """
+  @spec to_json(t()) :: String.t()
+  def to_json(vl) do
+    assert_jason!("to_json/1")
+
+    vl
+    |> to_spec()
+    |> Jason.encode!()
+  end
+
+  defp assert_jason!(fn_name) do
+    unless Code.ensure_loaded?(Jason) do
+      raise RuntimeError, """
+      #{fn_name} depends on the Jason package.
+
+      You can install it by adding
+
+          {:jason, "~> 1.2"}
+
+      to your dependency list.
+      """
+    end
+  end
+
+  @doc """
+  Wraps the given Vega-Lite specification in the `VegaLite`
+  struct for further processing.
+
+  There is also `from_json/1` that handles JSON parsing for you.
+
+  See [the docs](https://vega.github.io/vega-lite/docs/spec.html) for more details.
+  """
+  @spec from_spec(spec()) :: t()
+  def from_spec(spec) do
     %VegaLite{spec: spec}
   end
 
@@ -159,7 +214,9 @@ defmodule VegaLite do
   Returns the underlying Vega-Lite specification.
 
   The result is a nested Elixir datastructure that serializes
-  to an appropriate JSON specification.
+  to Vega-Lite JSON specification.
+
+  There is also `to_json/1` that handles JSON encoding for you.
 
   See [the docs](https://vega.github.io/vega-lite/docs/spec.html) for more details.
   """
@@ -691,7 +748,7 @@ defmodule VegaLite do
       |> Vl.data_from_values(...)
       # Note: top-level data, encoding, transforms are inherited
       # by the child views unless overriden
-      |> Vl.encode(:x, ...)
+      |> Vl.encode_field(:x, ...)
       |> Vl.layers([
         ...
       ])

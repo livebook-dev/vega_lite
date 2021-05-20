@@ -17,7 +17,7 @@ defmodule VegaLite.MixProject do
 
   defp deps do
     [
-      {:jason, "~> 1.2"},
+      {:jason, "~> 1.2", only: [:dev, :test]},
       {:ex_doc, "~> 0.24", only: :dev, runtime: false}
     ]
   end
