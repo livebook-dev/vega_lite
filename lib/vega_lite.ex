@@ -417,15 +417,15 @@ defmodule VegaLite do
       Vl.new()
       |> Vl.data_from_values(...)
       |> Vl.mark(:point)
-      |> Vl.encode(:x, "time", type: :temporal)
-      |> Vl.encode(:y, "price", type: :quantitative)
-      |> Vl.encode(:color, "country", type: :nominal)
-      |> Vl.encode(:size, "count", type: :quantitative)
+      |> Vl.encode_field(:x, "time", type: :temporal)
+      |> Vl.encode_field(:y, "price", type: :quantitative)
+      |> Vl.encode_field(:color, "country", type: :nominal)
+      |> Vl.encode_field(:size, "count", type: :quantitative)
       |> ...
 
       Vl.new()
-      |> Vl.encode(:x, "date", time_unit: :month, title: "Month")
-      |> Vl.encode(:y, "price", type: :quantitative, aggregate: :mean, title: "Mean product price")
+      |> Vl.encode_field(:x, "date", time_unit: :month, title: "Month")
+      |> Vl.encode_field(:y, "price", type: :quantitative, aggregate: :mean, title: "Mean product price")
       |> ...
 
 
