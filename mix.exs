@@ -26,7 +26,11 @@ defmodule VegaLite.MixProject do
     [
       main: "VegaLite",
       source_url: "https://github.com/jonatanklosko/vega_lite",
-      source_ref: "main"
+      source_ref: "main",
+      extras: [
+        "README.md",
+        "guides/examples.md"
+      ]
     ]
   end
 end
