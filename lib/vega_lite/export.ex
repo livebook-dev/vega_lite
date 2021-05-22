@@ -15,8 +15,8 @@ defmodule VegaLite.Export do
       must be either of: `:json`, `:html`. By default
       the format is inferred from the file extension.
   """
-  @spec export!(VegaLite.t(), binary(), keyword()) :: :ok
-  def export!(vl, path, opts \\ []) do
+  @spec save!(VegaLite.t(), binary(), keyword()) :: :ok
+  def save!(vl, path, opts \\ []) do
     format =
       Keyword.get_lazy(opts, :format, fn ->
         path |> Path.extname() |> String.trim_leading(".") |> String.to_existing_atom()
