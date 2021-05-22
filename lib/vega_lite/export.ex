@@ -6,6 +6,39 @@ defmodule VegaLite.Export do
   alias VegaLite.Utils
 
   @doc """
+  Saves a `VegaLite` specification to file in one of
+  the supported formats.
+
+  ## Options
+
+    * `:format` - the format to export the graphic as,
+      must be either of: `:json`, `:html`. By default
+      the format is inferred from the file extension.
+  """
+  @spec export!(VegaLite.t(), binary(), keyword()) :: :ok
+  def export!(vl, path, opts \\ []) do
+    format =
+      Keyword.get_lazy(opts, :format, fn ->
+        path |> Path.extname() |> String.trim_leading(".") |> String.to_atom()
+      end)
+
+    content =
+      case format do
+        :json ->
+          to_json(vl)
+
+        :html ->
+          to_html(vl)
+
+        _ ->
+          raise ArgumentError,
+                "unsupported export format, expected :json or :html, got: #{inspect(format)}"
+      end
+
+    File.write!(path, content)
+  end
+
+  @doc """
   Returns the underlying Vega-Lite specification as JSON.
   """
   @spec to_json(VegaLite.t()) :: String.t()
@@ -18,7 +51,7 @@ defmodule VegaLite.Export do
   end
 
   @doc """
-  Builds an HTML page that renders the given graphics.
+  Builds an HTML page that renders the given graphic.
 
   The HTML page loads necessary JavaScript dependencies from a CDN
   and then renders the graphic in a root element.
