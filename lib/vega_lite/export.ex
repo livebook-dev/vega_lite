@@ -18,31 +18,28 @@ defmodule VegaLite.Export do
 
   defp to_html(vl) do
     json = VegaLite.to_json(vl)
-    render_html(json: json)
+
+    """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Vega-Lite graphic</title>
+      <script src="https://cdn.jsdelivr.net/npm/vega@5.20.2"></script>
+      <script src="https://cdn.jsdelivr.net/npm/vega-lite@5.1.0"></script>
+      <script src="https://cdn.jsdelivr.net/npm/vega-embed@6.17.0"></script>
+    </head>
+    <body>
+      <div id="graphic"></div>
+      <script type="text/javascript">
+        var spec = JSON.parse("#{escape_double_quotes(json)}");
+        vegaEmbed("#graphic", spec);
+      </script>
+    </body>
+    </html>
+    """
   end
-
-  @html_template """
-  <!DOCTYPE html>
-  <html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vega-Lite graphic</title>
-    <script src="https://cdn.jsdelivr.net/npm/vega@5.20.2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vega-lite@5.1.0"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vega-embed@6.17.0"></script>
-  </head>
-  <body>
-    <div id="graphic"></div>
-    <script type="text/javascript">
-      var spec = JSON.parse("<%= escape_double_quotes(@json) %>");
-      vegaEmbed("#graphic", spec);
-    </script>
-  </body>
-  </html>
-  """
-
-  EEx.function_from_string(:defp, :render_html, @html_template, [:assigns])
 
   defp escape_double_quotes(json) do
     String.replace(json, ~s{"}, ~s{\\"})
