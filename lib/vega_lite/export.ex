@@ -8,15 +8,21 @@ defmodule VegaLite.Export do
   @doc """
   Saves the specification as an HTML file.
 
-  The HTML page loads necessary JavaScript dependencies from a CDN
-  and then renders the graphic in a root element.
+  A convenience function on top of `to_html/1`.
   """
   @spec save_html!(VegaLite.t(), binary()) :: :ok
   def save_html!(vl, path) do
     File.write!(path, to_html(vl))
   end
 
-  defp to_html(vl) do
+  @doc """
+  Builds an HTML page that renders the given graphics.
+
+  The HTML page loads necessary JavaScript dependencies from a CDN
+  and then renders the graphic in a root element.
+  """
+  @spec to_html(VegaLite.t()) :: binary()
+  def to_html(vl) do
     json = VegaLite.to_json(vl)
 
     """
