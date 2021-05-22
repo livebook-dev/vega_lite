@@ -19,7 +19,7 @@ defmodule VegaLite.Export do
   def export!(vl, path, opts \\ []) do
     format =
       Keyword.get_lazy(opts, :format, fn ->
-        path |> Path.extname() |> String.trim_leading(".") |> String.to_atom()
+        path |> Path.extname() |> String.trim_leading(".") |> String.to_existing_atom()
       end)
 
     content =
