@@ -3,16 +3,18 @@ defmodule VegaLite.Export do
   Various export methods for a `VegaLite` specification.
   """
 
-  require EEx
+  alias VegaLite.Utils
 
   @doc """
-  Saves the specification as an HTML file.
-
-  A convenience function on top of `to_html/1`.
+  Returns the underlying Vega-Lite specification as JSON.
   """
-  @spec save_html!(VegaLite.t(), binary()) :: :ok
-  def save_html!(vl, path) do
-    File.write!(path, to_html(vl))
+  @spec to_json(VegaLite.t()) :: String.t()
+  def to_json(vl) do
+    Utils.assert_jason!("to_json/1")
+
+    vl
+    |> VegaLite.to_spec()
+    |> Jason.encode!()
   end
 
   @doc """
@@ -23,7 +25,7 @@ defmodule VegaLite.Export do
   """
   @spec to_html(VegaLite.t()) :: binary()
   def to_html(vl) do
-    json = VegaLite.to_json(vl)
+    json = to_json(vl)
 
     """
     <!DOCTYPE html>

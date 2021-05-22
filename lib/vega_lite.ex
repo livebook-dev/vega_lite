@@ -98,6 +98,8 @@ defmodule VegaLite do
 
   defstruct spec: %{"$schema" => @schema_url}
 
+  alias VegaLite.Utils
+
   @type t :: %__MODULE__{
           spec: spec()
         }
@@ -154,47 +156,11 @@ defmodule VegaLite do
   """
   @spec from_json(String.t()) :: t()
   def from_json(json) do
-    assert_jason!("from_json/1")
+    Utils.assert_jason!("from_json/1")
 
     json
     |> Jason.decode!()
     |> from_spec()
-  end
-
-  @doc """
-  Returns the underlying Vega-Lite specification as JSON.
-
-  ## Examples
-
-      Vl.new()
-      |> Vl.data_from_values(...)
-      |> Vl.mark(...)
-      |> Vl.encode_field(...)
-      |> Vl.to_json()
-
-  See [the docs](https://vega.github.io/vega-lite/docs/spec.html) for more details.
-  """
-  @spec to_json(t()) :: String.t()
-  def to_json(vl) do
-    assert_jason!("to_json/1")
-
-    vl
-    |> to_spec()
-    |> Jason.encode!()
-  end
-
-  defp assert_jason!(fn_name) do
-    unless Code.ensure_loaded?(Jason) do
-      raise RuntimeError, """
-      #{fn_name} depends on the Jason package.
-
-      You can install it by adding
-
-          {:jason, "~> 1.2"}
-
-      to your dependency list.
-      """
-    end
   end
 
   @doc """
@@ -215,8 +181,6 @@ defmodule VegaLite do
 
   The result is a nested Elixir datastructure that serializes
   to Vega-Lite JSON specification.
-
-  There is also `to_json/1` that handles JSON encoding for you.
 
   See [the docs](https://vega.github.io/vega-lite/docs/spec.html) for more details.
   """
