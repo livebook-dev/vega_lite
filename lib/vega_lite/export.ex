@@ -138,13 +138,13 @@ defmodule VegaLite.Export do
 
   defp node_convert(vl, format, fn_name) do
     json = to_json(vl)
-    json_file = System.tmp_dir!() |> Path.join("vl.json")
+    json_file = System.tmp_dir!() |> Path.join("vega-lite-#{Utils.process_timestamp()}.json")
     File.write!(json_file, json)
 
     script_path = find_npm_script!("vl2#{format}", fn_name)
     {output, 0} = System.cmd(script_path, [json_file])
 
-    File.rm!(json_file)
+    _ = File.rm(json_file)
 
     output
   end
@@ -162,11 +162,8 @@ defmodule VegaLite.Export do
 
     [local_bin, global_bin]
     |> Enum.map(&npm_script_from_bin(&1, script_name))
-    |> Enum.find(&match?({:ok, _path}, &1))
+    |> Enum.find(fn path -> path != nil end)
     |> case do
-      {:ok, path} ->
-        path
-
       nil ->
         raise RuntimeError, """
         #{fn_name} requires #{script_name} executable from the vega-lite npm package.
@@ -177,6 +174,9 @@ defmodule VegaLite.Export do
             # or in the current directory
             npm install vega vega-lite canvas
         """
+
+      path ->
+        path
     end
   end
 
@@ -187,11 +187,6 @@ defmodule VegaLite.Export do
 
   defp npm_script_from_bin(bin, script_name) do
     script_path = Path.join(bin, script_name)
-
-    if File.exists?(script_path) do
-      {:ok, script_path}
-    else
-      :error
-    end
+    if File.exists?(script_path), do: script_path, else: nil
   end
 end
