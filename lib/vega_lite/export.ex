@@ -38,6 +38,8 @@ defmodule VegaLite.Export do
     File.write!(path, content)
   end
 
+  @compile {:no_warn_undefined, {Jason, :encode!, 1}}
+
   @doc """
   Returns the underlying Vega-Lite specification as JSON.
   """
