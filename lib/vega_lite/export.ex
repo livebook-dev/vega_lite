@@ -4,7 +4,7 @@ defmodule VegaLite.Export do
 
   All of the export functions depend on the `:jason` package.
   Additionally the PNG, SVG and PDF exports rely on npm packages,
-  so you will need Node.js, `npm` and the following dependencies:
+  so you will need Node.js, `npm`, and the following dependencies:
 
       npm install -g vega vega-lite canvas
       # or in the current directory
