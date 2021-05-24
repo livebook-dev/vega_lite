@@ -12,7 +12,7 @@ defmodule VegaLite.MixProject do
   end
 
   def application do
-    []
+    [extra_applications: [:wx]]
   end
 
   defp deps do

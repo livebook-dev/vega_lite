@@ -132,7 +132,6 @@ defmodule VegaLite do
   end
 
   @compile {:no_warn_undefined, {Jason, :decode!, 1}}
-  @compile {:no_warn_undefined, {Jason, :encode!, 1}}
 
   @doc """
   Parses the given Vega-Lite JSON specification
