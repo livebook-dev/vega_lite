@@ -1,13 +1,19 @@
 defmodule VegaLite.MixProject do
   use Mix.Project
 
+  @version "0.1.0"
+  @description "Elixir bindings to Vega-Lite"
+
   def project do
     [
       app: :vega_lite,
-      version: "0.1.0-dev",
+      version: @version,
+      description: @description,
+      name: "VegaLite",
       elixir: "~> 1.7",
       deps: deps(),
       docs: docs(),
+      package: package(),
       # Modules used by VegaLite.WxViewer if available
       xref: [exclude: [:wx, :wx_object, :wxFrame, :wxWebView]]
     ]
@@ -27,12 +33,21 @@ defmodule VegaLite.MixProject do
   defp docs do
     [
       main: "VegaLite",
-      source_url: "https://github.com/jonatanklosko/vega_lite",
-      source_ref: "main",
+      source_url: "https://github.com/elixir-nx/vega_lite",
+      source_ref: "v#{@version}",
       extras: [
-        "README.md",
+        {:"README.md", [title: "README"]},
         "guides/examples.md"
       ]
+    ]
+  end
+
+  def package do
+    [
+      licenses: ["Apache-2.0"],
+      links: %{
+        "GitHub" => "https://github.com/elixir-nx/vega_lite"
+      }
     ]
   end
 end
