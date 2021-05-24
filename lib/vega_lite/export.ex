@@ -1,6 +1,14 @@
 defmodule VegaLite.Export do
   @moduledoc """
   Various export methods for a `VegaLite` specification.
+
+  All of the export functions depend on the `:jason` package.
+  Additionally the PNG, SVG and PDF exports rely on npm packages,
+  so you will need Node.js, `npm` and the following dependencies:
+
+      npm install -g vega vega-lite canvas
+      # or in the current directory
+      npm install vega vega-lite canvas
   """
 
   alias VegaLite.Utils
@@ -12,8 +20,8 @@ defmodule VegaLite.Export do
   ## Options
 
     * `:format` - the format to export the graphic as,
-      must be either of: `:json`, `:html`. By default
-      the format is inferred from the file extension.
+      must be either of: `:json`, `:html`, `:png`, `:svg`, `:pdf`.
+      By default the format is inferred from the file extension.
   """
   @spec save!(VegaLite.t(), binary(), keyword()) :: :ok
   def save!(vl, path, opts \\ []) do
@@ -30,9 +38,18 @@ defmodule VegaLite.Export do
         :html ->
           to_html(vl)
 
+        :png ->
+          to_png(vl)
+
+        :svg ->
+          to_svg(vl)
+
+        :pdf ->
+          to_pdf(vl)
+
         _ ->
           raise ArgumentError,
-                "unsupported export format, expected :json or :html, got: #{inspect(format)}"
+                "unsupported export format, expected :json, :html, :png, :svg or :pdf, got: #{inspect(format)}"
       end
 
     File.write!(path, content)
@@ -84,5 +101,97 @@ defmodule VegaLite.Export do
 
   defp escape_double_quotes(json) do
     String.replace(json, ~s{"}, ~s{\\"})
+  end
+
+  @doc """
+  Renders the given graphic as a PNG image and returns
+  its binary content.
+
+  Relies on the `npm` packages mentioned above.
+  """
+  @spec to_png(VegaLite.t()) :: binary()
+  def to_png(vl) do
+    node_convert(vl, "png", "to_png/1")
+  end
+
+  @doc """
+  Renders the given graphic as an SVG image and returns
+  its binary content.
+
+  Relies on the `npm` packages mentioned above.
+  """
+  @spec to_svg(VegaLite.t()) :: binary()
+  def to_svg(vl) do
+    node_convert(vl, "svg", "to_svg/1")
+  end
+
+  @doc """
+  Renders the given graphic into a PDF and returns its
+  binary content.
+
+  Relies on the `npm` packages mentioned above.
+  """
+  @spec to_pdf(VegaLite.t()) :: binary()
+  def to_pdf(vl) do
+    node_convert(vl, "pdf", "to_pdf/1")
+  end
+
+  defp node_convert(vl, format, fn_name) do
+    json = to_json(vl)
+    json_file = System.tmp_dir!() |> Path.join("vl.json")
+    File.write!(json_file, json)
+
+    script_path = find_npm_script!("vl2#{format}", fn_name)
+    {output, 0} = System.cmd(script_path, [json_file])
+
+    File.rm!(json_file)
+
+    output
+  end
+
+  defp find_npm_script!(script_name, fn_name) do
+    npm_path = System.find_executable("npm")
+
+    unless npm_path do
+      raise RuntimeError,
+            "#{fn_name} requires Node.js and npm to be installed and available in PATH"
+    end
+
+    local_bin = npm_bin(npm_path)
+    global_bin = npm_bin(npm_path, ["--global"])
+
+    [local_bin, global_bin]
+    |> Enum.map(&npm_script_from_bin(&1, script_name))
+    |> Enum.find(&match?({:ok, _path}, &1))
+    |> case do
+      {:ok, path} ->
+        path
+
+      nil ->
+        raise RuntimeError, """
+        #{fn_name} requires #{script_name} executable from the vega-lite npm package.
+
+        Make sure to install the necessary npm dependencies:
+
+            npm install -g vega vega-lite canvas
+            # or in the current directory
+            npm install vega vega-lite canvas
+        """
+    end
+  end
+
+  defp npm_bin(npm_path, args \\ []) do
+    {npm_bin, 0} = System.cmd(npm_path, ["bin" | args])
+    String.trim(npm_bin)
+  end
+
+  defp npm_script_from_bin(bin, script_name) do
+    script_path = Path.join(bin, script_name)
+
+    if File.exists?(script_path) do
+      {:ok, script_path}
+    else
+      :error
+    end
   end
 end
