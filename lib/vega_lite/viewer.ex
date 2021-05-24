@@ -30,16 +30,9 @@ defmodule VegaLite.Viewer do
     end
   end
 
-  if Code.ensure_compiled(:wx) == {:module, :wx} do
-    defp start_wx_viewer(vl) do
-      vl
-      |> VegaLite.Export.to_html()
-      |> VegaLite.WxViewer.start()
-    end
-  else
-    defp start_wx_viewer(_vl) do
-      raise RuntimeError,
-            "VegaLite.Viewer requires Erlang compilation to include the :wx module, but it's not available"
-    end
+  defp start_wx_viewer(vl) do
+    vl
+    |> VegaLite.Export.to_html()
+    |> VegaLite.WxViewer.start()
   end
 end

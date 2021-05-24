@@ -7,12 +7,14 @@ defmodule VegaLite.MixProject do
       version: "0.1.0-dev",
       elixir: "~> 1.7",
       deps: deps(),
-      docs: docs()
+      docs: docs(),
+      # Modules used by VegaLite.WxViewer if available
+      xref: [exclude: [:wx, :wx_object, :wxFrame, :wxWebView]]
     ]
   end
 
   def application do
-    [extra_applications: [:wx]]
+    []
   end
 
   defp deps do
