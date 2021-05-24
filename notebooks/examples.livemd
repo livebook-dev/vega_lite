@@ -4,7 +4,7 @@
 
 ```elixir
 Mix.install([
-  {:vega_lite, "~> 0.1.0-dev", github: "elixir-nx/vega_lite", branch: "main"},
+  {:vega_lite, "~> 0.1.0"},
   {:jason, "~> 1.2"}
 ])
 ```
