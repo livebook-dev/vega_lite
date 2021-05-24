@@ -3,13 +3,13 @@
 [![Actions Status](https://github.com/elixir-nx/vega_lite/workflows/Test/badge.svg)](https://github.com/elixir-nx/vega_lite/actions)
 [![Docs](https://img.shields.io/badge/docs-gray.svg)](https://static.jonatanklosko.com/docs/vega_lite)
 
-**Note: this is currently experimental**
+**Note: This is currently experimental.**
 
 Elixir bindings to [Vega-Lite](https://vega.github.io/vega-lite).
 
 ## Installation
 
-You can add VegaLite as dependency in your mix.exs. At the moment
+You can add VegaLite as a dependency in your mix.exs. At the moment
 you will have to use a Git dependency until we publish the first release:
 
 ```elixir
