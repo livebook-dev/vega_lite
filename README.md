@@ -12,11 +12,15 @@ in which case you can call `Mix.install/2`:
 
 ```elixir
 Mix.install([
-  {:vega_lite, "~> 0.1.0"}
+  {:vega_lite, "~> 0.1.0"},
+  {:kino, "~> 0.1.0"}
 ])
 ```
 
-Otherwise you can add the above dependency to your mix.exs.
+You will also want [Kino](https://github.com/elixir-nx/kino) to ensure
+Livebook renders the graphics nicely.
+
+Otherwise you can add the `:vega_lite` dependency to your mix.exs.
 
 ## License
 
