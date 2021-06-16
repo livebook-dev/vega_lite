@@ -5,7 +5,15 @@
 
 Elixir bindings to [Vega-Lite](https://vega.github.io/vega-lite).
 
+You can use it inside Livebook to plot graphics or in regular Elixir
+projects to save graphics to PNG, SVG, PDF, or render them using a
+webviewer.
+
+[See the documentation](https://hexdocs.pm/vega_lite).
+
 ## Installation
+
+### Inside Livebook
 
 You most likely want to use VegaLite in [Livebook](https://github.com/elixir-nx/livebook),
 in which case you can call `Mix.install/2`:
@@ -18,9 +26,20 @@ Mix.install([
 ```
 
 You will also want [Kino](https://github.com/elixir-nx/kino) to ensure
-Livebook renders the graphics nicely.
+Livebook renders the graphics nicely. There is an introductory guide
+to VegaLite in the "Explore" section of your Livebook application.
 
-Otherwise you can add the `:vega_lite` dependency to your mix.exs.
+### In Mix projects
+
+You can add the `:vega_lite` dependency to your `mix.exs`:
+
+```elixir
+def deps do
+  [
+    {:vega_lite, "~> 0.1.0"}
+  ]
+end
+```
 
 ## License
 
