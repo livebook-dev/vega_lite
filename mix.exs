@@ -34,11 +34,7 @@ defmodule VegaLite.MixProject do
     [
       main: "VegaLite",
       source_url: "https://github.com/elixir-nx/vega_lite",
-      source_ref: "v#{@version}",
-      extras: [
-        {:"README.md", [title: "README"]},
-        "guides/examples.md"
-      ]
+      source_ref: "v#{@version}"
     ]
   end
 
