@@ -159,6 +159,12 @@ defmodule VegaLiteTest do
                    end
     end
 
+    test "raises an error when invalid type is given" do
+      assert_raise ArgumentError, ~r/:qqquant/, fn ->
+        Vl.new() |> Vl.encode(:x, value: 2, type: :qqquant)
+      end
+    end
+
     test "does not raise when aggregating count" do
       vl = Vl.new() |> Vl.encode(:y, aggregate: :count)
 
@@ -202,6 +208,12 @@ defmodule VegaLiteTest do
     test "raises an error when field is not string" do
       assert_raise ArgumentError, "field must be a string, got: []", fn ->
         Vl.new() |> Vl.encode_field(:x, [])
+      end
+    end
+
+    test "raises an error when invalid type is given" do
+      assert_raise ArgumentError, ~r/:qqquant/, fn ->
+        Vl.new() |> Vl.encode_field(:x, "x", type: :qqquant)
       end
     end
 

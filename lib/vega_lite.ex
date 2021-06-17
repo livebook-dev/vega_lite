@@ -374,6 +374,10 @@ defmodule VegaLite do
             "channel definition must include one of the following keys: :field, :value, :datum, but none was given"
     end
 
+    with {:ok, type} <- Keyword.fetch(opts, :type) do
+      validate_inclusion!([:quantitative, :temporal, :nominal, :ordinal, :geojson], type, "type")
+    end
+
     update_in(vl.spec, fn spec ->
       vl_channel = to_vl_key(channel)
       vl_props = opts_to_vl_props(opts)
