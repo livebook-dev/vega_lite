@@ -361,26 +361,39 @@ defmodule VegaLite do
       |> Vl.encode(:y, field: "price")
       |> ...
 
+  Alternatively, a list of property lists may be given:
+
+      Vl.new()
+      |> Vl.encode(:tooltip, [
+        [field: "height", type: :quantitative],
+        [field: "width", type: :quantitative]
+      ])
+      |> ...
+
 
   See [the docs](https://vega.github.io/vega-lite/docs/encoding.html) for more details.
   """
-  @spec encode(t(), atom(), keyword()) :: t()
+  @spec encode(t(), atom(), keyword() | list(keyword())) :: t()
   def encode(vl, channel, opts) do
     validate_channel!(channel)
 
-    if not Enum.any?([:field, :value, :datum], &Keyword.has_key?(opts, &1)) and
-         opts[:aggregate] != :count do
-      raise ArgumentError,
-            "channel definition must include one of the following keys: :field, :value, :datum, but none was given"
-    end
+    list? = match?([h | _] when is_list(h), opts)
 
-    with {:ok, type} <- Keyword.fetch(opts, :type) do
-      validate_inclusion!([:quantitative, :temporal, :nominal, :ordinal, :geojson], type, "type")
+    if list? do
+      for opts <- opts, do: validate_channel_opts(opts)
+    else
+      validate_channel_opts(opts)
     end
 
     update_in(vl.spec, fn spec ->
       vl_channel = to_vl_key(channel)
-      vl_props = opts_to_vl_props(opts)
+
+      vl_props =
+        if list? do
+          Enum.map(opts, &opts_to_vl_props/1)
+        else
+          opts_to_vl_props(opts)
+        end
 
       encoding =
         spec
@@ -401,6 +414,18 @@ defmodule VegaLite do
 
       raise ArgumentError,
             "unknown #{name}, expected one of #{list_str}, got: #{inspect(value)}"
+    end
+  end
+
+  defp validate_channel_opts(opts) do
+    if not Enum.any?([:field, :value, :datum], &Keyword.has_key?(opts, &1)) and
+         opts[:aggregate] != :count do
+      raise ArgumentError,
+            "channel definition must include one of the following keys: :field, :value, :datum, but none was given"
+    end
+
+    with {:ok, type} <- Keyword.fetch(opts, :type) do
+      validate_inclusion!([:quantitative, :temporal, :nominal, :ordinal, :geojson], type, "type")
     end
   end
 
