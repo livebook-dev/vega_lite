@@ -196,6 +196,30 @@ defmodule VegaLiteTest do
 
       assert vl == expected_vl
     end
+
+    test "accepts a list of option lists" do
+      vl =
+        Vl.new()
+        |> Vl.encode(:tooltip, [
+          [field: "height", type: :quantitative],
+          [field: "width", type: :quantitative]
+        ])
+
+      expected_vl =
+        Vl.from_json("""
+        {
+          "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+          "encoding": {
+            "tooltip": [
+              { "field": "height", "type": "quantitative" },
+              { "field": "width", "type": "quantitative" }
+            ]
+          }
+        }
+        """)
+
+      assert vl == expected_vl
+    end
   end
 
   describe "encode_field/4" do
