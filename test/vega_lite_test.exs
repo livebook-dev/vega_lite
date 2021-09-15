@@ -144,6 +144,41 @@ defmodule VegaLiteTest do
     end
   end
 
+  describe "datasets_from_values/2" do
+    test "adds normalized data values to the specification" do
+      data1 = [
+        %{"height" => 170, "weight" => 80},
+        %{"height" => 190, "weight" => 85}
+      ]
+
+      data2 = [
+        %{height: 170, weight: 80},
+        [height: 190, weight: 85]
+      ]
+
+      vl = Vl.new() |> Vl.datasets_from_values(data1: data1, data2: data2)
+
+      expected_vl =
+        Vl.from_json("""
+        {
+          "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+          "datasets": {
+            "data1": [
+              { "height": 170, "weight": 80 },
+              { "height": 190, "weight": 85 }
+            ],
+            "data2": [
+              { "height": 170, "weight": 80 },
+              { "height": 190, "weight": 85 }
+            ]
+          }
+        }
+        """)
+
+      assert vl == expected_vl
+    end
+  end
+
   describe "encode/3" do
     test "raises an error when invalid channel is given" do
       assert_raise ArgumentError, fn ->
