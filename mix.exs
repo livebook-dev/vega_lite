@@ -1,7 +1,7 @@
 defmodule VegaLite.MixProject do
   use Mix.Project
 
-  @version "0.1.1"
+  @version "0.1.2"
   @description "Elixir bindings to Vega-Lite"
 
   def project do
