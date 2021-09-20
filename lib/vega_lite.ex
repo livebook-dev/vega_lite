@@ -278,15 +278,18 @@ defmodule VegaLite do
   """
   @spec data_from_values(t(), Enumerable.t(), keyword()) :: t()
   def data_from_values(vl, values, opts \\ []) do
-    values =
-      Enum.map(values, fn value ->
-        Map.new(value, fn {key, value} ->
-          {to_string(key), value}
-        end)
-      end)
-
+    values = normalize_data_values(values)
     opts = put_in(opts[:values], values)
     data(vl, opts)
+  end
+
+  # Converts enumerable data structure into Vega-Lite compatible data points
+  defp normalize_data_values(values) do
+    Enum.map(values, fn value ->
+      Map.new(value, fn {key, value} ->
+        {to_string(key), value}
+      end)
+    end)
   end
 
   @doc """
@@ -318,6 +321,49 @@ defmodule VegaLite do
       end)
 
     data_from_values(vl, values, opts)
+  end
+
+  @doc """
+  Specifies top-level datasets.
+
+  Datasets can be used as a data source further in the specification.
+  This is useful if you need to refer to the data in multiple places
+  or use a `transrofm/2` like `:lookup`.
+
+  Datasets should be a key-value enumerable, where key is the
+  dataset name and value is a list of data points adhering to
+  `data_from_values/3`.
+
+  ## Examples
+
+      results = [
+        %{"category" => "A", "score" => 28},
+        %{"category" => "B", "score" => 55}
+      ]
+
+      points = [
+        %{"x" => "1", "y" => 10},
+        %{"x" => "2", "y" => 100}
+      ]
+
+      Vl.new()
+      |> Vl.datasets_from_values(results: results, points: points)
+      # Use one of the data sets as the primary data
+      |> Vl.data(name: "results")
+      |> ...
+
+
+  See [the docs](https://vega.github.io/vega-lite/docs/data.html#datasets) for more details.
+  """
+  @spec datasets_from_values(t(), Enumerable.t()) :: t()
+  def datasets_from_values(vl, datasets) do
+    datasets =
+      for {name, values} <- datasets, into: %{} do
+        values = normalize_data_values(values)
+        {to_string(name), values}
+      end
+
+    put_in(vl.spec["datasets"], datasets)
   end
 
   @channels ~w(
