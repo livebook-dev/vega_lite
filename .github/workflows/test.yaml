@@ -48,4 +48,6 @@ jobs:
       - run: mix compile --warnings-as-errors
         if: ${{ matrix.lint }}
 
+      - run: mix dialyzer
+
       - run: mix test

@@ -15,7 +15,10 @@ defmodule VegaLite.MixProject do
       docs: docs(),
       package: package(),
       # Modules used by VegaLite.WxViewer if available
-      xref: [exclude: [:wx, :wx_object, :wxFrame, :wxWebView]]
+      xref: [exclude: [:wx, :wx_object, :wxFrame, :wxWebView]],
+      dialyzer: [
+        plt_add_apps: [:wx]
+      ]
     ]
   end
 
@@ -26,7 +29,8 @@ defmodule VegaLite.MixProject do
   defp deps do
     [
       {:jason, "~> 1.2", only: [:dev, :test]},
-      {:ex_doc, "~> 0.24", only: :dev, runtime: false}
+      {:ex_doc, "~> 0.24", only: :dev, runtime: false},
+      {:dialyxir, "~> 1.0", only: :dev, runtime: false}
     ]
   end
 
