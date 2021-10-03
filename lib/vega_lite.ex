@@ -328,7 +328,7 @@ defmodule VegaLite do
 
   Datasets can be used as a data source further in the specification.
   This is useful if you need to refer to the data in multiple places
-  or use a `transrofm/2` like `:lookup`.
+  or use a `transform/2` like `:lookup`.
 
   Datasets should be a key-value enumerable, where key is the
   dataset name and value is a list of data points adhering to
