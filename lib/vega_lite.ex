@@ -785,7 +785,7 @@ defmodule VegaLite do
       Vl.new()
       |> Vl.data_from_values(...)
       # Note: top-level data, encoding, transforms are inherited
-      # by the child views unless overriden
+      # by the child views unless overridden
       |> Vl.encode_field(:x, ...)
       |> Vl.layers([
         ...

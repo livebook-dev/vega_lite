@@ -304,7 +304,7 @@ defmodule VegaLiteTest do
       end
     end
 
-    test "raises an error when invlaid repeat type is given" do
+    test "raises an error when invalid repeat type is given" do
       assert_raise ArgumentError,
                    "unknown repeat type, expected one of :repeat, :row, :column, :layer, got: :invalid_repeat_type",
                    fn ->
@@ -350,7 +350,7 @@ defmodule VegaLiteTest do
                    end
     end
 
-    test "raises an error when invlaid mark type is given" do
+    test "raises an error when invalid mark type is given" do
       assert_raise ArgumentError, fn ->
         Vl.new() |> Vl.mark(:invalid)
       end
