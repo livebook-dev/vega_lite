@@ -368,6 +368,7 @@ defmodule VegaLite do
 
   @channels ~w(
     x y x2 y2 x_error y_error x_error2 y_error2
+    x_offset y_offset
     theta theta2 radius radius2
     longitude latitude longitude2 latitude2
     angle color fill stroke opacity fill_opacity stroke_opacity shape size stroke_dash stroke_width
