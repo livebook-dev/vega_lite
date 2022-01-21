@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.1.3](https://github.com/livebook-dev/vega_lite/tree/v0.1.3) (2022-01-21)
+
+### Added
+
+- Support for the `:x_offset` and `:y_offset` encoding channels ([#25](https://github.com/livebook-dev/vega_lite/pull/25))
+
 ## [v0.1.2](https://github.com/livebook-dev/vega_lite/tree/v0.1.2) (2021-09-20)
 
 ### Added
