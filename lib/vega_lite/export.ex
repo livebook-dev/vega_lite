@@ -144,7 +144,7 @@ defmodule VegaLite.Export do
     File.write!(json_file, json)
 
     script_path = find_npm_script!("vl2#{format}", fn_name)
-    {output, 0} = System.cmd(script_path, [json_file])
+    {output, 0} = run_cmd(script_path, [json_file])
 
     _ = File.rm(json_file)
 
@@ -183,12 +183,21 @@ defmodule VegaLite.Export do
   end
 
   defp npm_bin(npm_path, args \\ []) do
-    {npm_bin, 0} = System.cmd(npm_path, ["bin" | args])
+    {npm_bin, 0} = run_cmd(npm_path, ["bin" | args])
     String.trim(npm_bin)
   end
 
   defp npm_script_from_bin(bin, script_name) do
     script_path = Path.join(bin, script_name)
     if File.exists?(script_path), do: script_path, else: nil
+  end
+
+  def run_cmd(script_path, args) do
+    case :os.type do
+      {:win32, _} ->
+        System.cmd("cmd", ["/C", script_path | args])
+      {_, _} ->
+        System.cmd(script_path, args)
+    end
   end
 end
