@@ -193,11 +193,9 @@ defmodule VegaLite.Export do
   end
 
   def run_cmd(script_path, args) do
-    case :os.type do
-      {:win32, _} ->
-        System.cmd("cmd", ["/C", script_path | args])
-      {_, _} ->
-        System.cmd(script_path, args)
+    case :os.type() do
+      {:win32, _} -> System.cmd("cmd", ["/C", script_path | args])
+      {_, _} -> System.cmd(script_path, args)
     end
   end
 end
