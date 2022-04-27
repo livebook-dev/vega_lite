@@ -724,7 +724,7 @@ defmodule VegaLiteTest do
 
     test "raises an error when invalid facet definition is given" do
       assert_raise ArgumentError,
-                   "facet definition must be either a field definition (keywrod list with the :field key) or a mapping with :row/:column keys, got: [invalid: 1]",
+                   "facet definition must be either a field definition (keyword list with the :field key) or a mapping with :row/:column keys, got: [invalid: 1]",
                    fn ->
                      Vl.new() |> Vl.facet([invalid: 1], Vl.new())
                    end
