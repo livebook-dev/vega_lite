@@ -25,7 +25,7 @@ defmodule VegaLite do
       Vl.new(width: 400, height: 400)
 
       # Specify data source for the graphic, see the data_from_* functions
-      |> Vl.data_from_series(iteration: 1..100, score: 1..100)
+      |> Vl.data_from_values(iteration: 1..100, score: 1..100)
       # |> Vl.data_from_values([%{iteration: 1, score: 1}, ...])
       # |> Vl.data_from_url("...")
 
@@ -82,8 +82,7 @@ defmodule VegaLite do
   The result of `VegaLite.from_json/1` function can then be passed
   through any other function to further customize the specification.
   In particular, it may be useful to parse a JSON specification
-  and add your custom data with `VegaLite.data_from_values/3`
-  or `VegaLite.data_from_series/3`.
+  and add your custom data with `VegaLite.data_from_values/3`.
 
   ## Options
 
@@ -193,8 +192,7 @@ defmodule VegaLite do
 
   Defining the data source is usually the first step
   when building a graphic. For most use cases it's preferable
-  to use more specific functions like `data_from_url/3`, `data_from_values/3`,
-  or `data_from_series/3`.
+  to use more specific functions like `data_from_url/3` or `data_from_values/3`.
 
   All provided options are converted to data properties.
 
