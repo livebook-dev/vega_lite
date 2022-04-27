@@ -918,7 +918,7 @@ defmodule VegaLite do
 
         true ->
           raise ArgumentError,
-                "facet definition must be either a field definition (keywrod list with the :field key) or a mapping with :row/:column keys, got: #{inspect(facet_def)}"
+                "facet definition must be either a field definition (keyword list with the :field key) or a mapping with :row/:column keys, got: #{inspect(facet_def)}"
       end
 
     child_spec = to_child_view_spec!(child_view)
