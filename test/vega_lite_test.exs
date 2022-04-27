@@ -96,7 +96,7 @@ defmodule VegaLiteTest do
 
     test "converts key-value data structures to value entries" do
       data = [
-        %{height: 170, weight: 80},
+        [height: 170, weight: 80],
         [height: 190, weight: 85]
       ]
 
@@ -117,14 +117,12 @@ defmodule VegaLiteTest do
 
       assert vl == expected_vl
     end
-  end
 
-  describe "data_from_series/3" do
-    test "adds data values to the specification" do
+    test "supports series" do
       iterations = 1..3
       scores = [50, 60, 90]
 
-      vl = Vl.new() |> Vl.data_from_series(iteration: iterations, score: scores)
+      vl = Vl.new() |> Vl.data_from_values(iteration: iterations, score: scores)
 
       expected_vl =
         Vl.from_json("""
@@ -135,6 +133,30 @@ defmodule VegaLiteTest do
               { "iteration": 1, "score": 50 },
               { "iteration": 2, "score": 60 },
               { "iteration": 3, "score": 90 }
+            ]
+          }
+        }
+        """)
+
+      assert vl == expected_vl
+    end
+
+    test "inludes partial data if the :only option is specified" do
+      data = [
+        %{"height" => 170, "weight" => 80, "score" => 50},
+        %{"height" => 190, "weight" => 85, "score" => 55}
+      ]
+
+      vl = Vl.new() |> Vl.data_from_values(data, only: ["height", "weight"])
+
+      expected_vl =
+        Vl.from_json("""
+        {
+          "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+          "data": {
+            "values": [
+              { "height": 170, "weight": 80 },
+              { "height": 190, "weight": 85 }
             ]
           }
         }
@@ -156,7 +178,9 @@ defmodule VegaLiteTest do
         [height: 190, weight: 85]
       ]
 
-      vl = Vl.new() |> Vl.datasets_from_values(data1: data1, data2: data2)
+      data3 = %{iteration: 1..3, score: [50, 60, 90]}
+
+      vl = Vl.new() |> Vl.datasets_from_values(data1: data1, data2: data2, data3: data3)
 
       expected_vl =
         Vl.from_json("""
@@ -170,6 +194,11 @@ defmodule VegaLiteTest do
             "data2": [
               { "height": 170, "weight": 80 },
               { "height": 190, "weight": 85 }
+            ],
+            "data3": [
+              { "iteration": 1, "score": 50 },
+              { "iteration": 2, "score": 60 },
+              { "iteration": 3, "score": 90 }
             ]
           }
         }

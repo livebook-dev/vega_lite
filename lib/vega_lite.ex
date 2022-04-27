@@ -257,10 +257,14 @@ defmodule VegaLite do
   @doc """
   Sets inline data in the specification.
 
-  `values` should be an enumerable of data records,
-  where each record is a key-value structure.
+  Any tabular data is accepted, as long as it adheres to the
+  `Table.Reader` protocol.
 
-  All provided options are converted to data properties.
+  ## Options
+
+    * `:only` - specifies a subset of fields to pick from the data
+
+  All other options are converted to data properties.
 
   ## Examples
 
@@ -273,42 +277,44 @@ defmodule VegaLite do
       |> Vl.data_from_values(data)
       |> ...
 
-
-  See [the docs](https://vega.github.io/vega-lite/docs/data.html#inline) for more details.
-  """
-  @spec data_from_values(t(), Enumerable.t(), keyword()) :: t()
-  def data_from_values(vl, values, opts \\ []) do
-    values = normalize_data_values(values)
-    opts = put_in(opts[:values], values)
-    data(vl, opts)
-  end
-
-  # Converts enumerable data structure into Vega-Lite compatible data points
-  defp normalize_data_values(values) do
-    Enum.map(values, fn value ->
-      Map.new(value, fn {key, value} ->
-        {to_string(key), value}
-      end)
-    end)
-  end
-
-  @doc """
-  Sets inline data in the specification.
-
-  This is an alternative to `data_from_values/3`,
-  useful when you have a separate list of values
-  for each data column.
-
-  ## Examples
+  Note that any tabular data is accepted, as long as it adheres
+  to the `Table.Reader` protocol. For example that's how we can
+  pass individual series:
 
       xs = 1..100
       ys = 1..100
 
       Vl.new()
-      |> Vl.data_from_series(x: xs, y: ys)
+      |> Vl.data_from_values(x: xs, y: ys)
       |> ...
+
+  See [the docs](https://vega.github.io/vega-lite/docs/data.html#inline) for more details.
   """
-  @spec data_from_series(t(), Enumerable.t(), keyword()) :: t()
+  @spec data_from_values(t(), Table.Reader.t(), keyword()) :: t()
+  def data_from_values(vl, values, opts \\ []) do
+    {only, opts} = Keyword.pop(opts, :only)
+    values = tabular_to_data_values(values, only)
+    opts = put_in(opts[:values], values)
+    data(vl, opts)
+  end
+
+  # Converts enumerable data structure into Vega-Lite compatible data points
+  defp tabular_to_data_values(tabular, only) do
+    only = only && only |> Enum.map(&to_string/1) |> MapSet.new()
+
+    tabular
+    |> Table.to_rows()
+    |> Enum.map(fn entry ->
+      for {key, value} <- entry,
+          key = to_string(key),
+          only == nil or MapSet.member?(only, key),
+          into: %{},
+          do: {key, value}
+    end)
+  end
+
+  @doc false
+  @deprecated "Use VegaLite.data_from_values/3 instead"
   def data_from_series(vl, series, opts \\ []) do
     {keys, value_series} = Enum.unzip(series)
 
@@ -330,9 +336,8 @@ defmodule VegaLite do
   This is useful if you need to refer to the data in multiple places
   or use a `transform/2` like `:lookup`.
 
-  Datasets should be a key-value enumerable, where key is the
-  dataset name and value is a list of data points adhering to
-  `data_from_values/3`.
+  Datasets should be a key-value enumerable, where key is the dataset
+  name and value is tabular data as in `data_from_values/3`.
 
   ## Examples
 
@@ -359,7 +364,7 @@ defmodule VegaLite do
   def datasets_from_values(vl, datasets) do
     datasets =
       for {name, values} <- datasets, into: %{} do
-        values = normalize_data_values(values)
+        values = tabular_to_data_values(values, nil)
         {to_string(name), values}
       end
 
