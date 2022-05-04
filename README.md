@@ -1,6 +1,6 @@
 # VegaLite
 
-[![Actions Status](https://github.com/elixir-nx/vega_lite/workflows/Test/badge.svg)](https://github.com/elixir-nx/vega_lite/actions)
+[![Actions Status](https://github.com/livebook-dev/vega_lite/workflows/Test/badge.svg)](https://github.com/livebook-dev/vega_lite/actions)
 [![Docs](https://img.shields.io/badge/docs-gray.svg)](https://hexdocs.pm/vega_lite)
 
 Elixir bindings to [Vega-Lite](https://vega.github.io/vega-lite).
@@ -15,17 +15,17 @@ webviewer.
 
 ### Inside Livebook
 
-You most likely want to use VegaLite in [Livebook](https://github.com/elixir-nx/livebook),
+You most likely want to use VegaLite in [Livebook](https://github.com/livebook-dev/livebook),
 in which case you can call `Mix.install/2`:
 
 ```elixir
 Mix.install([
   {:vega_lite, "~> 0.1.4"},
-  {:kino, "~> 0.5.0"}
+  {:kino_vega_lite, "~> 0.1.1"}
 ])
 ```
 
-You will also want [Kino](https://github.com/elixir-nx/kino) to ensure
+You will also want [kino_vega_lite](https://github.com/livebook-dev/kino_vega_lite) to ensure
 Livebook renders the graphics nicely. There is an introductory guide
 to VegaLite in the "Explore" section of your Livebook application.
 
