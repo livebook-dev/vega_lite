@@ -377,6 +377,7 @@ defmodule VegaLite do
     angle color fill stroke opacity fill_opacity stroke_opacity shape size stroke_dash stroke_width
     text tooltip
     href
+    url
     description
     detail
     key
