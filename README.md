@@ -20,7 +20,7 @@ in which case you can call `Mix.install/2`:
 
 ```elixir
 Mix.install([
-  {:vega_lite, "~> 0.1.4"},
+  {:vega_lite, "~> 0.1.5"},
   {:kino_vega_lite, "~> 0.1.1"}
 ])
 ```
@@ -36,7 +36,7 @@ You can add the `:vega_lite` dependency to your `mix.exs`:
 ```elixir
 def deps do
   [
-    {:vega_lite, "~> 0.1.4"}
+    {:vega_lite, "~> 0.1.5"}
   ]
 end
 ```

@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.1.5](https://github.com/livebook-dev/vega_lite/tree/v0.1.5) (2022-06-17)
+
+### Fixed
+
+- Channel validation to allow `url` ([#32](https://github.com/livebook-dev/vega_lite/pull/32))
+
 ## [v0.1.4](https://github.com/livebook-dev/vega_lite/tree/v0.1.4) (2022-04-27)
 
 ### Added
