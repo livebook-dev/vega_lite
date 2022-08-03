@@ -10,6 +10,63 @@ defmodule VegaLiteTest do
       end
     end
 
+    test "handles structs in properties" do
+      json =
+        Vl.new()
+        |> Vl.data(sequence: [day: ~D[2022-03-01], as: "x"])
+        |> Vl.Export.to_json()
+
+      expected_json =
+        Vl.from_json("""
+        {
+          "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+          "data": {
+            "sequence": {
+              "day": "2022-03-01",
+              "as": "x"
+            }
+          }
+        }
+        """)
+        |> Vl.Export.to_json()
+
+      assert json == expected_json
+    end
+
+    test "does not normalize values" do
+      json =
+        Vl.new()
+        |> Vl.data(
+          values: [
+            %{foo_bar: 1, baz: ~D[2022-03-01]},
+            %{foo_bar: 2, baz: ~D[2022-03-02]}
+          ]
+        )
+        |> Vl.Export.to_json()
+
+      expected_json =
+        Vl.from_json("""
+        {
+          "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+          "data": {
+            "values": [
+              {
+                "foo_bar": 1,
+                "baz": "2022-03-01"
+              },
+              {
+                "foo_bar": 2,
+                "baz": "2022-03-02"
+              }
+            ]
+          }
+        }
+        """)
+        |> Vl.Export.to_json()
+
+      assert json == expected_json
+    end
+
     test "transforms options to properties" do
       vl =
         Vl.new()

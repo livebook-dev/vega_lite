@@ -210,7 +210,9 @@ defmodule VegaLite do
     validate_at_least_one!(opts, "data property")
 
     update_in(vl.spec, fn spec ->
+      {values, opts} = Keyword.pop(opts, :values)
       vl_props = opts_to_vl_props(opts)
+      vl_props = if(values, do: Map.put(vl_props, "values", values), else: vl_props)
       Map.put(spec, "data", vl_props)
     end)
   end
@@ -1094,6 +1096,8 @@ defmodule VegaLite do
   defp to_vl(value) when value in [true, false, nil], do: value
 
   defp to_vl(atom) when is_atom(atom), do: to_vl_key(atom)
+
+  defp to_vl(%_{} = struct), do: struct
 
   defp to_vl(map) when is_map(map) do
     Map.new(map, fn {key, value} ->
