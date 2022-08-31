@@ -177,7 +177,7 @@ defmodule VegaLite.Export do
     end
 
     local_bin_args =
-      case Keyword.get(opts, :local_npm_prefix) do
+      case opts[:local_npm_prefix] do
         nil -> []
         path -> ["--prefix", path]
       end
