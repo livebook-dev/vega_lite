@@ -22,11 +22,16 @@ defmodule VegaLite.Export do
     * `:format` - the format to export the graphic as,
       must be either of: `:json`, `:html`, `:png`, `:svg`, `:pdf`.
       By default the format is inferred from the file extension.
+
+    * `:local_npm_prefix` - a relative path pointing to a local npm project directory
+      where the necessary npm packages are installed. For instance, in Phoenix projects
+      you may want to pass `local_npm_prefix: "assets"`. By default the npm packages
+      are searched for in the current directory and globally.
   """
   @spec save!(VegaLite.t(), binary(), keyword()) :: :ok
   def save!(vl, path, opts \\ []) do
-    format =
-      Keyword.get_lazy(opts, :format, fn ->
+    {format, opts} =
+      Keyword.pop_lazy(opts, :format, fn ->
         path |> Path.extname() |> String.trim_leading(".") |> String.to_existing_atom()
       end)
 
@@ -39,13 +44,13 @@ defmodule VegaLite.Export do
           to_html(vl)
 
         :png ->
-          to_png(vl)
+          to_png(vl, opts)
 
         :svg ->
-          to_svg(vl)
+          to_svg(vl, opts)
 
         :pdf ->
-          to_pdf(vl)
+          to_pdf(vl, opts)
 
         _ ->
           raise ArgumentError,
@@ -110,10 +115,17 @@ defmodule VegaLite.Export do
   its binary content.
 
   Relies on the `npm` packages mentioned above.
+
+  ## Options
+
+    * `:local_npm_prefix` - a relative path pointing to a local npm project directory
+      where the necessary npm packages are installed. For instance, in Phoenix projects
+      you may want to pass `local_npm_prefix: "assets"`. By default the npm packages
+      are searched for in the current directory and globally.
   """
-  @spec to_png(VegaLite.t()) :: binary()
-  def to_png(vl) do
-    node_convert(vl, "png", "to_png/1")
+  @spec to_png(VegaLite.t(), keyword()) :: binary()
+  def to_png(vl, opts \\ []) do
+    node_convert(vl, "png", "to_png/1", opts)
   end
 
   @doc """
@@ -121,10 +133,17 @@ defmodule VegaLite.Export do
   its binary content.
 
   Relies on the `npm` packages mentioned above.
+
+  ## Options
+
+    * `:local_npm_prefix` - a relative path pointing to a local npm project directory
+      where the necessary npm packages are installed. For instance, in Phoenix projects
+      you may want to pass `local_npm_prefix: "assets"`. By default the npm packages
+      are searched for in the current directory and globally.
   """
-  @spec to_svg(VegaLite.t()) :: binary()
-  def to_svg(vl) do
-    node_convert(vl, "svg", "to_svg/1")
+  @spec to_svg(VegaLite.t(), keyword()) :: binary()
+  def to_svg(vl, opts \\ []) do
+    node_convert(vl, "svg", "to_svg/1", opts)
   end
 
   @doc """
@@ -132,18 +151,25 @@ defmodule VegaLite.Export do
   binary content.
 
   Relies on the `npm` packages mentioned above.
+
+  ## Options
+
+    * `:local_npm_prefix` - a relative path pointing to a local npm project directory
+      where the necessary npm packages are installed. For instance, in Phoenix projects
+      you may want to pass `local_npm_prefix: "assets"`. By default the npm packages
+      are searched for in the current directory and globally.
   """
-  @spec to_pdf(VegaLite.t()) :: binary()
-  def to_pdf(vl) do
-    node_convert(vl, "pdf", "to_pdf/1")
+  @spec to_pdf(VegaLite.t(), keyword()) :: binary()
+  def to_pdf(vl, opts \\ []) do
+    node_convert(vl, "pdf", "to_pdf/1", opts)
   end
 
-  defp node_convert(vl, format, fn_name) do
+  defp node_convert(vl, format, fn_name, opts) do
     json = to_json(vl)
     json_file = System.tmp_dir!() |> Path.join("vega-lite-#{Utils.process_timestamp()}.json")
     File.write!(json_file, json)
 
-    script_path = find_npm_script!("vl2#{format}", fn_name)
+    script_path = find_npm_script!("vl2#{format}", fn_name, opts)
     {output, 0} = run_cmd(script_path, [json_file])
 
     _ = File.rm(json_file)
@@ -151,7 +177,7 @@ defmodule VegaLite.Export do
     output
   end
 
-  defp find_npm_script!(script_name, fn_name) do
+  defp find_npm_script!(script_name, fn_name, opts) do
     npm_path = System.find_executable("npm")
 
     unless npm_path do
@@ -159,7 +185,13 @@ defmodule VegaLite.Export do
             "#{fn_name} requires Node.js and npm to be installed and available in PATH"
     end
 
-    local_bin = npm_bin(npm_path)
+    local_bin_args =
+      case opts[:local_npm_prefix] do
+        nil -> []
+        path -> ["--prefix", path]
+      end
+
+    local_bin = npm_bin(npm_path, local_bin_args)
     global_bin = npm_bin(npm_path, ["--global"])
 
     [local_bin, global_bin]
@@ -182,7 +214,7 @@ defmodule VegaLite.Export do
     end
   end
 
-  defp npm_bin(npm_path, args \\ []) do
+  defp npm_bin(npm_path, args) do
     {npm_bin, 0} = run_cmd(npm_path, ["bin" | args])
     String.trim(npm_bin)
   end
