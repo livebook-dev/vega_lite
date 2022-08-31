@@ -188,7 +188,7 @@ defmodule VegaLite.Export do
     end
   end
 
-  defp npm_bin(npm_path, args \\ []) do
+  defp npm_bin(npm_path, args) do
     {npm_bin, 0} = run_cmd(npm_path, ["bin" | args])
     String.trim(npm_bin)
   end
