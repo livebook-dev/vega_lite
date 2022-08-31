@@ -25,8 +25,8 @@ defmodule VegaLite.Export do
   """
   @spec save!(VegaLite.t(), binary(), keyword()) :: :ok
   def save!(vl, path, opts \\ []) do
-    format =
-      Keyword.get_lazy(opts, :format, fn ->
+    {format, opts} =
+      Keyword.pop_lazy(opts, :format, fn ->
         path |> Path.extname() |> String.trim_leading(".") |> String.to_existing_atom()
       end)
 
@@ -39,13 +39,13 @@ defmodule VegaLite.Export do
           to_html(vl)
 
         :png ->
-          to_png(vl, Keyword.delete(opts, :format))
+          to_png(vl, opts)
 
         :svg ->
-          to_svg(vl, Keyword.delete(opts, :format))
+          to_svg(vl, opts)
 
         :pdf ->
-          to_pdf(vl, Keyword.delete(opts, :format))
+          to_pdf(vl, opts)
 
         _ ->
           raise ArgumentError,
