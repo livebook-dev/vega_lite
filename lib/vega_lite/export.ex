@@ -22,8 +22,11 @@ defmodule VegaLite.Export do
     * `:format` - the format to export the graphic as,
       must be either of: `:json`, `:html`, `:png`, `:svg`, `:pdf`.
       By default the format is inferred from the file extension.
-    * `:local_npm_prefix` - used for `:png`, `:svg`, `:pdf` formats to help locate local npm directory.
-      For example in Phoenix projects you need to pass `local_npm_prefix: "assets"`.
+
+    * `:local_npm_prefix` - a relative path pointing to a local npm project directory
+      where the necessary npm packages are installed. For instance, in Phoenix projects
+      you may want to pass `local_npm_prefix: "assets"`. By default the npm packages
+      are searched for in the current directory and globally.
   """
   @spec save!(VegaLite.t(), binary(), keyword()) :: :ok
   def save!(vl, path, opts \\ []) do
@@ -115,8 +118,10 @@ defmodule VegaLite.Export do
 
   ## Options
 
-  * `:local_npm_prefix` - used for `:png`, `:svg`, `:pdf` formats to help locate local npm directory.
-    For example in Phoenix projects you need to pass `local_npm_prefix: "assets"`.
+    * `:local_npm_prefix` - a relative path pointing to a local npm project directory
+      where the necessary npm packages are installed. For instance, in Phoenix projects
+      you may want to pass `local_npm_prefix: "assets"`. By default the npm packages
+      are searched for in the current directory and globally.
   """
   @spec to_png(VegaLite.t(), keyword()) :: binary()
   def to_png(vl, opts \\ []) do
@@ -131,8 +136,10 @@ defmodule VegaLite.Export do
 
   ## Options
 
-  * `:local_npm_prefix` - used for `:png`, `:svg`, `:pdf` formats to help locate local npm directory.
-    For example in Phoenix projects you need to pass `local_npm_prefix: "assets"`.
+    * `:local_npm_prefix` - a relative path pointing to a local npm project directory
+      where the necessary npm packages are installed. For instance, in Phoenix projects
+      you may want to pass `local_npm_prefix: "assets"`. By default the npm packages
+      are searched for in the current directory and globally.
   """
   @spec to_svg(VegaLite.t(), keyword()) :: binary()
   def to_svg(vl, opts \\ []) do
@@ -147,8 +154,10 @@ defmodule VegaLite.Export do
 
   ## Options
 
-  * `:local_npm_prefix` - used for `:png`, `:svg`, `:pdf` formats to help locate local npm directory.
-    For example in Phoenix projects you need to pass `local_npm_prefix: "assets"`.
+    * `:local_npm_prefix` - a relative path pointing to a local npm project directory
+      where the necessary npm packages are installed. For instance, in Phoenix projects
+      you may want to pass `local_npm_prefix: "assets"`. By default the npm packages
+      are searched for in the current directory and globally.
   """
   @spec to_pdf(VegaLite.t(), keyword()) :: binary()
   def to_pdf(vl, opts \\ []) do
