@@ -90,7 +90,10 @@ defmodule VegaLite do
   which are converted directly as the specification properties.
   To provide a more Elixir-friendly experience, the options
   are automatically normalized, so you can use keyword lists
-  and snake-case atom keys.
+  and snake-case atom keys. For example, if you specify
+  `axis: [label_angle: -45]`, this library will automatically
+  rewrite it `labelAngle`, which is the name used by the VegaLite
+  specification.
   """
 
   @schema_url "https://vega.github.io/schema/vega-lite/v5.json"
