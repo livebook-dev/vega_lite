@@ -6,9 +6,15 @@ defmodule VegaLite.Export do
   Additionally the PNG, SVG and PDF exports rely on npm packages,
   so you will need Node.js, `npm`, and the following dependencies:
 
-      npm install -g vega vega-lite canvas
-      # or in the current directory
-      npm install vega vega-lite canvas
+  ```console
+  $ npm install -g vega vega-lite canvas
+  ```
+
+  Alternatively you can install the dependencies in a local directory:
+
+  ```console
+  $ npm install vega vega-lite canvas
+  ```
   """
 
   alias VegaLite.Utils
@@ -27,6 +33,7 @@ defmodule VegaLite.Export do
       where the necessary npm packages are installed. For instance, in Phoenix projects
       you may want to pass `local_npm_prefix: "assets"`. By default the npm packages
       are searched for in the current directory and globally.
+
   """
   @spec save!(VegaLite.t(), binary(), keyword()) :: :ok
   def save!(vl, path, opts \\ []) do
@@ -122,6 +129,7 @@ defmodule VegaLite.Export do
       where the necessary npm packages are installed. For instance, in Phoenix projects
       you may want to pass `local_npm_prefix: "assets"`. By default the npm packages
       are searched for in the current directory and globally.
+
   """
   @spec to_png(VegaLite.t(), keyword()) :: binary()
   def to_png(vl, opts \\ []) do
@@ -140,6 +148,7 @@ defmodule VegaLite.Export do
       where the necessary npm packages are installed. For instance, in Phoenix projects
       you may want to pass `local_npm_prefix: "assets"`. By default the npm packages
       are searched for in the current directory and globally.
+
   """
   @spec to_svg(VegaLite.t(), keyword()) :: binary()
   def to_svg(vl, opts \\ []) do
@@ -158,6 +167,7 @@ defmodule VegaLite.Export do
       where the necessary npm packages are installed. For instance, in Phoenix projects
       you may want to pass `local_npm_prefix: "assets"`. By default the npm packages
       are searched for in the current directory and globally.
+
   """
   @spec to_pdf(VegaLite.t(), keyword()) :: binary()
   def to_pdf(vl, opts \\ []) do
@@ -169,15 +179,14 @@ defmodule VegaLite.Export do
     json_file = System.tmp_dir!() |> Path.join("vega-lite-#{Utils.process_timestamp()}.json")
     File.write!(json_file, json)
 
-    script_path = find_npm_script!("vl2#{format}", fn_name, opts)
-    {output, 0} = run_cmd(script_path, [json_file])
+    output = npm_exec!("vl2#{format}", [json_file], fn_name, opts)
 
     _ = File.rm(json_file)
 
     output
   end
 
-  defp find_npm_script!(script_name, fn_name, opts) do
+  defp npm_exec!(command, args, fn_name, opts) do
     npm_path = System.find_executable("npm")
 
     unless npm_path do
@@ -185,49 +194,42 @@ defmodule VegaLite.Export do
             "#{fn_name} requires Node.js and npm to be installed and available in PATH"
     end
 
-    local_bin_args =
+    prefix_args =
       case opts[:local_npm_prefix] do
         nil -> []
         path -> ["--prefix", path]
       end
 
-    local_bin = npm_bin(npm_path, local_bin_args)
-    global_bin = npm_bin(npm_path, ["--global"])
+    case run_cmd(
+           npm_path,
+           ["exec", "--no", "--offline"] ++ prefix_args ++ ["--", command] ++ args
+         ) do
+      {output, 0} ->
+        output
 
-    [local_bin, global_bin]
-    |> Enum.map(&npm_script_from_bin(&1, script_name))
-    |> Enum.find(fn path -> path != nil end)
-    |> case do
-      nil ->
+      {output, code} ->
         raise RuntimeError, """
-        #{fn_name} requires #{script_name} executable from the vega-lite npm package.
+        #{fn_name} requires #{command} executable from the vega-lite npm package.
 
         Make sure to install the necessary npm dependencies:
 
             npm install -g vega vega-lite canvas
             # or in the current directory
             npm install vega vega-lite canvas
-        """
 
-      path ->
-        path
+        npm exec failed with (#{code}):
+
+        #{output}
+        """
     end
   end
 
-  defp npm_bin(npm_path, args) do
-    {npm_bin, 0} = run_cmd(npm_path, ["bin" | args])
-    String.trim(npm_bin)
-  end
-
-  defp npm_script_from_bin(bin, script_name) do
-    script_path = Path.join(bin, script_name)
-    if File.exists?(script_path), do: script_path, else: nil
-  end
-
   def run_cmd(script_path, args) do
+    opts = [stderr_to_stdout: true]
+
     case :os.type() do
-      {:win32, _} -> System.cmd("cmd", ["/C", script_path | args])
-      {_, _} -> System.cmd(script_path, args)
+      {:win32, _} -> System.cmd("cmd", ["/C", script_path | args], opts)
+      {_, _} -> System.cmd(script_path, args, opts)
     end
   end
 end
