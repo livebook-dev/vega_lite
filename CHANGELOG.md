@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.1.7](https://github.com/livebook-dev/vega_lite/tree/v0.1.7) (2023-03-27)
+
+### Added
+
+- Option to configure npm prefix ([#36](https://github.com/livebook-dev/vega_lite/pull/36))
+
+### Fixed
+
+- Export compatibility with Node.js 19 ([#44](https://github.com/livebook-dev/vega_lite/pull/44))
+
 ## [v0.1.6](https://github.com/livebook-dev/vega_lite/tree/v0.1.6) (2022-08-04)
 
 ### Fixed
