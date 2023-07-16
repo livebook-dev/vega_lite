@@ -34,7 +34,7 @@ defmodule VegaLite.MixProject do
   defp docs do
     [
       main: "VegaLite",
-      source_url: "https://github.com/elixir-nx/vega_lite",
+      source_url: "https://github.com/livebook-dev/vega_lite",
       source_ref: "v#{@version}"
     ]
   end
@@ -43,7 +43,7 @@ defmodule VegaLite.MixProject do
     [
       licenses: ["Apache-2.0"],
       links: %{
-        "GitHub" => "https://github.com/elixir-nx/vega_lite"
+        "GitHub" => "https://github.com/livebook-dev/vega_lite"
       }
     ]
   end
