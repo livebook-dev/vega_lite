@@ -2,7 +2,7 @@ defmodule VegaLite.Viewer do
   @moduledoc """
   Graphics rendering using Erlang's `:wx` bindings.
 
-  This method if useful for viewing graphics in scripts
+  This method is useful for viewing graphics in scripts
   and IEx sessions. Note it requires Erlang/OTP 24+ with
   a recent WxWidgets installation with webview support.
   """
