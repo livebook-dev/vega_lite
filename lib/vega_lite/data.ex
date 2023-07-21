@@ -14,6 +14,46 @@ defmodule VegaLite.Data do
     end
   end
 
+  def heatmap([data | opts], fields), do: heatmap(Vl.new(opts), data, fields)
+  def heatmap(data, fields), do: heatmap(Vl.new(), data, fields)
+
+  def heatmap(vl, data, fields) do
+    fields = Enum.map(fields, &heatmap_defaults/1)
+
+    if fields[:text],
+      do: annotated_heatmap(vl, data, fields),
+      else: chart(vl, data, :rect, fields)
+  end
+
+  defp annotated_heatmap(vl, data, fields) do
+    text = fields[:text]
+    fields = List.keydelete(fields, :text, 0)
+
+    vl
+    |> Vl.layers([
+      chart(data, :rect, fields),
+      chart(data, :text, text: text, x: fields[:x], y: fields[:y])
+    ])
+  end
+
+  defp heatmap_defaults({field, [col | opts]}) when field in [:x, :y] do
+    opts = Keyword.put_new(opts, :type, :nominal)
+    {field, List.flatten([col, opts])}
+  end
+
+  defp heatmap_defaults({field, col}) when field in [:x, :y] do
+    {field, [col, type: :nominal]}
+  end
+
+  defp heatmap_defaults({field, [col | opts]}) when field in [:color, :text] do
+    opts = Keyword.put_new(opts, :type, :quantitative)
+    {field, List.flatten([col, opts])}
+  end
+
+  defp heatmap_defaults({field, col}) when field in [:color, :text] do
+    {field, [col, type: :quantitative]}
+  end
+
   defp enconde_mark(vl, [mark | opts]), do: Vl.mark(vl, mark, opts)
   defp enconde_mark(vl, mark), do: Vl.mark(vl, mark)
 
