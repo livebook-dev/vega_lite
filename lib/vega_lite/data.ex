@@ -114,14 +114,9 @@ defmodule VegaLite.Data do
   end
 
   defp annotated_heatmap(vl, data, fields) do
-    text = fields[:text]
+    text_fields = [text: fields[:text], x: fields[:x], y: fields[:y]]
     fields = List.keydelete(fields, :text, 0)
-
-    vl
-    |> Vl.layers([
-      chart(data, :rect, fields),
-      chart(data, :text, text: text, x: fields[:x], y: fields[:y])
-    ])
+    Vl.layers(vl, [chart(data, :rect, fields), chart(data, :text, text_fields)])
   end
 
   defp heatmap_defaults({field, {col, opts}}) when field in [:x, :y] do
@@ -160,11 +155,7 @@ defmodule VegaLite.Data do
     end
   end
 
-  defp type_for(data, name) do
-    get_in(data, [Access.filter(&(&1.name == name)), :type])
-    |> hd()
-    |> String.to_atom()
-  end
+  defp type_for(data, name), do: get_in(data, [Access.filter(&(&1.name == name)), :type]) |> hd()
 
   defp columns_for(data) do
     with true <- implements?(Table.Reader, data),
@@ -190,16 +181,16 @@ defmodule VegaLite.Data do
     end
   end
 
-  defp type_of(%mod{}) when mod in [Decimal], do: "quantitative"
-  defp type_of(%mod{}) when mod in [Date, NaiveDateTime, DateTime], do: "temporal"
+  defp type_of(%mod{}) when mod in [Decimal], do: :quantitative
+  defp type_of(%mod{}) when mod in [Date, NaiveDateTime, DateTime], do: :temporal
 
-  defp type_of(data) when is_number(data), do: "quantitative"
+  defp type_of(data) when is_number(data), do: :quantitative
 
   defp type_of(data) when is_binary(data) do
-    if date?(data) or date_time?(data), do: "temporal", else: "nominal"
+    if date?(data) or date_time?(data), do: :temporal, else: :nominal
   end
 
-  defp type_of(data) when is_atom(data), do: "nominal"
+  defp type_of(data) when is_atom(data), do: :nominal
 
   defp type_of(_), do: nil
 

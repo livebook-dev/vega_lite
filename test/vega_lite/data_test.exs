@@ -192,4 +192,127 @@ defmodule VegaLite.DataTest do
       assert vl == sh
     end
   end
+
+  describe "heatmap" do
+    test "simple heatmap" do
+      vl =
+        Vl.new()
+        |> Vl.data_from_values(@data)
+        |> Vl.mark(:rect)
+        |> Vl.encode_field(:x, "height", type: :nominal)
+        |> Vl.encode_field(:y, "weight", type: :nominal)
+
+      assert vl == Data.heatmap(@data, x: "height", y: "weight")
+    end
+
+    test "simple heatmap with color" do
+      vl =
+        Vl.new()
+        |> Vl.data_from_values(@data)
+        |> Vl.mark(:rect)
+        |> Vl.encode_field(:x, "height", type: :nominal)
+        |> Vl.encode_field(:y, "weight", type: :nominal)
+        |> Vl.encode_field(:color, "height", type: :quantitative)
+
+      assert vl == Data.heatmap(@data, x: "height", y: "weight", color: "height")
+    end
+
+    test "heatmap with color and text" do
+      vl =
+        Vl.new()
+        |> Vl.layers([
+          Vl.new()
+          |> Vl.data_from_values(@data)
+          |> Vl.mark(:rect)
+          |> Vl.encode_field(:x, "height", type: :nominal)
+          |> Vl.encode_field(:y, "weight", type: :nominal)
+          |> Vl.encode_field(:color, "height", type: :quantitative),
+          Vl.new()
+          |> Vl.data_from_values(@data)
+          |> Vl.mark(:text)
+          |> Vl.encode_field(:x, "height", type: :nominal)
+          |> Vl.encode_field(:y, "weight", type: :nominal)
+          |> Vl.encode_field(:text, "height", type: :quantitative)
+        ])
+
+      assert vl == Data.heatmap(@data, x: "height", y: "weight", color: "height", text: "height")
+    end
+
+    test "heatmap with title" do
+      vl =
+        Vl.new(title: "Heatmap")
+        |> Vl.layers([
+          Vl.new()
+          |> Vl.data_from_values(@data)
+          |> Vl.mark(:rect)
+          |> Vl.encode_field(:x, "height", type: :nominal)
+          |> Vl.encode_field(:y, "weight", type: :nominal)
+          |> Vl.encode_field(:color, "height", type: :quantitative),
+          Vl.new()
+          |> Vl.data_from_values(@data)
+          |> Vl.mark(:text)
+          |> Vl.encode_field(:x, "height", type: :nominal)
+          |> Vl.encode_field(:y, "weight", type: :nominal)
+          |> Vl.encode_field(:text, "height", type: :quantitative)
+        ])
+
+      assert vl ==
+               Data.heatmap({@data, title: "Heatmap"},
+                 x: "height",
+                 y: "weight",
+                 color: "height",
+                 text: "height"
+               )
+    end
+
+    test "heatmap with specified typed" do
+      vl =
+        Vl.new()
+        |> Vl.layers([
+          Vl.new()
+          |> Vl.data_from_values(@data)
+          |> Vl.mark(:rect)
+          |> Vl.encode_field(:x, "height", type: :quantitative)
+          |> Vl.encode_field(:y, "weight", type: :quantitative)
+          |> Vl.encode_field(:color, "height", type: :nominal),
+          Vl.new()
+          |> Vl.data_from_values(@data)
+          |> Vl.mark(:text)
+          |> Vl.encode_field(:x, "height", type: :quantitative)
+          |> Vl.encode_field(:y, "weight", type: :quantitative)
+          |> Vl.encode_field(:text, "height", type: :quantitative)
+        ])
+
+      assert vl ==
+               Data.heatmap(@data,
+                 x: {"height", type: :quantitative},
+                 y: {"weight", type: :quantitative},
+                 color: {"height", type: :nominal},
+                 text: "height"
+               )
+    end
+
+    test "heatmap with a Vl spec" do
+      vl =
+        Vl.new(title: "Heatmap", width: 500)
+        |> Vl.layers([
+          Vl.new()
+          |> Vl.data_from_values(@data)
+          |> Vl.mark(:rect)
+          |> Vl.encode_field(:x, "height", type: :nominal)
+          |> Vl.encode_field(:y, "weight", type: :nominal)
+          |> Vl.encode_field(:color, "height", type: :quantitative),
+          Vl.new()
+          |> Vl.data_from_values(@data)
+          |> Vl.mark(:text)
+          |> Vl.encode_field(:x, "height", type: :nominal)
+          |> Vl.encode_field(:y, "weight", type: :nominal)
+          |> Vl.encode_field(:text, "height", type: :quantitative)
+        ])
+
+      assert vl ==
+               Vl.new(title: "Heatmap", width: 500)
+               |> Data.heatmap(@data, x: "height", y: "weight", color: "height", text: "height")
+    end
+  end
 end
