@@ -1,7 +1,7 @@
 defmodule VegaLite.Data do
   alias VegaLite, as: Vl
 
-  def chart([data | opts], mark, fields), do: chart(Vl.new(opts), data, mark, fields)
+  def chart({data, opts}, mark, fields), do: chart(Vl.new(opts), data, mark, fields)
   def chart(data, mark, fields), do: chart(Vl.new(), data, mark, fields)
 
   def chart(vl, data, mark, fields) do
@@ -14,7 +14,7 @@ defmodule VegaLite.Data do
     end
   end
 
-  def heatmap([data | opts], fields), do: heatmap(Vl.new(opts), data, fields)
+  def heatmap({data, opts}, fields), do: heatmap(Vl.new(opts), data, fields)
   def heatmap(data, fields), do: heatmap(Vl.new(), data, fields)
 
   def heatmap(vl, data, fields) do
@@ -36,28 +36,28 @@ defmodule VegaLite.Data do
     ])
   end
 
-  defp heatmap_defaults({field, [col | opts]}) when field in [:x, :y] do
+  defp heatmap_defaults({field, {col, opts}}) when field in [:x, :y] do
     opts = Keyword.put_new(opts, :type, :nominal)
-    {field, List.flatten([col, opts])}
+    {field, {col, opts}}
   end
 
   defp heatmap_defaults({field, col}) when field in [:x, :y] do
-    {field, [col, type: :nominal]}
+    {field, {col, type: :nominal}}
   end
 
-  defp heatmap_defaults({field, [col | opts]}) when field in [:color, :text] do
+  defp heatmap_defaults({field, {col, opts}}) when field in [:color, :text] do
     opts = Keyword.put_new(opts, :type, :quantitative)
-    {field, List.flatten([col, opts])}
+    {field, {col, opts}}
   end
 
   defp heatmap_defaults({field, col}) when field in [:color, :text] do
-    {field, [col, type: :quantitative]}
+    {field, {col, type: :quantitative}}
   end
 
-  defp enconde_mark(vl, [mark | opts]), do: Vl.mark(vl, mark, opts)
+  defp enconde_mark(vl, {mark, opts}), do: Vl.mark(vl, mark, opts)
   defp enconde_mark(vl, mark), do: Vl.mark(vl, mark)
 
-  defp encode_field(schema, cols, field, [col | opts]) do
+  defp encode_field(schema, cols, field, {col, opts}) do
     opts = Keyword.put_new(opts, :type, type_for(cols, col))
     Vl.encode_field(schema, field, col, opts)
   end
@@ -68,7 +68,7 @@ defmodule VegaLite.Data do
 
   defp used_fields(fields) do
     for field <- fields, field, uniq: true do
-      if is_list(field), do: hd(field), else: field
+      if is_tuple(field), do: elem(field, 0), else: field
     end
   end
 
