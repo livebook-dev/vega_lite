@@ -1,9 +1,63 @@
 defmodule VegaLite.Data do
+  @moduledoc """
+  Data is a VegaLite module designed to provide a shorthand API for commonly used charts and
+  high-level abstractions for specialized plots.
+  Optionally accepts and always returns a valid `VegaLite` spec, fostering flexibility to be used
+  alone or in combination with the `VegaLite` module at any level and at any point.
+  It relies on internal type inference, and although all options can be overridden,
+  only data that implements the [Table.Reader](https://hexdocs.pm/table/Table.Reader.html)
+  protocol is supported.
+  """
+
   alias VegaLite, as: Vl
 
+  @doc """
+  Returns the specification for a given data, a mark and a list of fields to be encoded.
+
+  Each argument is accepted as the argument itself or a tuple with the argument and a keyword
+  list of options. All options must follow the specifications of the `VegaLite` module.
+
+  ## Examples
+
+      data = [
+        %{"category" => "A", "score" => 28},
+        %{"category" => "B", "score" => 55}
+      ]
+
+      Data.chart(data, :bar, x: "category", y: "score")
+
+  The above example achieves the same results as the example below.
+
+      Vl.new()
+      |> Vl.data_from_values(data, only: ["category", "score"])
+      |> Vl.mark(:bar)
+      |> Vl.encode_field(:x, "category", type: :nominal)
+      |> Vl.encode_field(:y, "score", type: :quantitative)
+  """
   def chart({data, opts}, mark, fields), do: chart(Vl.new(opts), data, mark, fields)
   def chart(data, mark, fields), do: chart(Vl.new(), data, mark, fields)
 
+  @doc """
+  Same as chart/3 but receives a valid `VegaLite` specification as a first argument.
+
+  ## Examples
+
+      data = [
+        %{"category" => "A", "score" => 28},
+        %{"category" => "B", "score" => 55}
+      ]
+
+      Vl.new(title: "With title")
+      |> Data.chart(data, :bar, x: "category", y: "score")
+
+  The above example achieves the same results as the example below.
+
+      Vl.new(title: "With title")
+      |> Vl.data_from_values(data, only: ["category", "score"])
+      |> Vl.mark(:bar)
+      |> Vl.encode_field(:x, "category", type: :nominal)
+      |> Vl.encode_field(:y, "score", type: :quantitative)
+  """
   def chart(vl, data, mark, fields) do
     cols = columns_for(data)
     used_fields = fields |> Keyword.values() |> used_fields()
@@ -14,9 +68,43 @@ defmodule VegaLite.Data do
     end
   end
 
+  @doc """
+  Returns the specification of a heat map for a given data and a list of fields to be encoded.
+
+  As a specialized chart, the heatmap expects an `:x` and `:y` and optionally a `:color` and a
+  `:text` field. Defaults to `:nominal` for the axes and `:quantitative` for color and text if
+  types are not specified.
+
+  ## Examples
+
+      data = [
+        %{"category" => "A", "score" => 28},
+        %{"category" => "B", "score" => 55}
+      ]
+
+      Data.heatmap(data, x: "category", y: "score")
+
+      Data.heatmap({data, title: "Heatmap"}, x: "category", y: "score")
+
+      Data.heatmap(data, x: "category", y: "score", color: "score", text: "category")
+
+  """
   def heatmap({data, opts}, fields), do: heatmap(Vl.new(opts), data, fields)
   def heatmap(data, fields), do: heatmap(Vl.new(), data, fields)
 
+  @doc """
+  Same as heatmap/2, but takes a valid `VegaLite` specification as the first argument.
+
+  ## Examples
+
+      data = [
+        %{"category" => "A", "score" => 28},
+        %{"category" => "B", "score" => 55}
+      ]
+
+      Vl.new(title: "Heatmap", width: 500)
+      |> Data.heatmap(data, x: "category", y: "score", color: "score", text: "category")
+  """
   def heatmap(vl, data, fields) do
     fields = Enum.map(fields, &heatmap_defaults/1)
 
