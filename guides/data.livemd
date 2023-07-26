@@ -1,0 +1,198 @@
+# VegaLite Data
+
+```elixir
+Mix.install([
+  {:explorer, "~> 0.6.1"},
+  {:kino, "~> 0.10.0"},
+  {:vega_lite, path: "/Users/cristineguadelupe/Dashbit/vega_lite", override: true},
+  {:kino_vega_lite, "~> 0.1.9"}
+])
+```
+
+## Introduction
+
+The `VegaLite.Data` module is designed to provide a shorthand API for a less verbose way to plot commonly used charts and high-end abstractions for specialized plots.
+
+The API can be combined with the main `VegaLite` module at any level and at any point, providing flexibility to achieve the same results in a more concise way without compromising expressiveness.
+
+Throughout this guide, we will look at how to use the API alone, in combination with the `VegaLite` module, and also show some comparisons between all the possible paths to achieve the same plotting results.
+
+**Limitations**: `VegaLite.Data` relies on internal type inference, and although all options may be overridden, only data that implements the [Table.Reader](https://hexdocs.pm/table/Table.Reader.html) protocol is supported.
+
+For meaningful examples, we will use the *iris* and *fuels* datasets directly from [Explorer](https://hexdocs.pm/explorer/Explorer.html).
+
+```elixir
+alias Explorer.DataFrame, as: DF
+alias VegaLite, as: Vl
+alias VegaLite.Data
+
+iris = Explorer.Datasets.iris()
+fuels = Explorer.Datasets.fossil_fuels()
+
+data = [
+  %{"category" => "A", "score" => 28},
+  %{"category" => "B", "score" => 50},
+  %{"category" => "C", "score" => 34},
+  %{"category" => "D", "score" => 42},
+  %{"category" => "E", "score" => 39}
+]
+```
+
+## Chart - the shorthand api
+
+`VegaLite.Data.chart/3` and `VegaLite.Data.chart/4` are the shorthand API. We will use these functions to get quick and concise plots. It's shine for plots that don't require a lot of configuration or customization.
+
+`VegaLite.Data.chart/3` takes 3 arguments: the data, the mark and a list of fields to be encoded while `VegaLite.Data.chart/4` works similarly, but takes a valid `VegaLite` specification as the first argument.
+
+```elixir
+# A simple bar plot using the shorthand api
+Data.chart(data, :bar, x: "category", y: "score")
+```
+
+```elixir
+# The same chart without the shorthand api
+Vl.new()
+|> Vl.data_from_values(data)
+|> Vl.mark(:bar)
+|> Vl.encode_field(:y, "score", type: :quantitative)
+|> Vl.encode_field(:x, "category", type: :nominal)
+```
+
+Plotting a simple chart is a breeze! As we can see from the comparison above, the code becomes much leaner and handleable. However, the API also accepts a list of options for each argument, allowing more complex results.
+
+```elixir
+# A line plot with point: true
+
+# Without the shorthand api
+Vl.new()
+|> Vl.data_from_values(fuels, only: ["total", "solid_fuel"])
+|> Vl.mark(:line, point: true)
+|> Vl.encode_field(:x, "total", type: :quantitative)
+|> Vl.encode_field(:y, "solid_fuel", type: :quantitative)
+
+Data.chart(fuels, {:line, point: true}, x: "total", y: "solid_fuel")
+```
+
+While mark and fields accepts the same `VegaLite.mark/3` and `VegaLite.enconde_field/4` options respectively, data accepts `VegaLite.new/1` options.
+
+```elixir
+# The same line plot with a title and a custom width
+
+# Without the shorthand api
+Vl.new(title: "Fuels", width: 400)
+|> Vl.data_from_values(fuels, only: ["total", "solid_fuel"])
+|> Vl.mark(:line, point: true)
+|> Vl.encode_field(:x, "total", type: :quantitative)
+|> Vl.encode_field(:y, "solid_fuel", type: :quantitative)
+
+Data.chart({fuels, title: "Fuels", width: 400}, {:line, point: true}, x: "total", y: "solid_fuel")
+```
+
+If a channel requires more configuration, the flexibility of the API comes into play.
+
+```elixir
+Vl.new(width: 500, height: 300, title: "Fuels")
+|> Vl.data_from_values(fuels, only: ["total", "solid_fuel"])
+|> Vl.mark(:point)
+|> Vl.encode_field(:x, "total", type: :quantitative)
+|> Vl.encode_field(:y, "solid_fuel", type: :quantitative)
+|> Vl.encode_field(:color, "total", type: :quantitative, scale: [scheme: "category10"])
+```
+
+In the example above, we have a color channel that requires more customization. While it's possible to get the exact same plot using only the shorthand API, the expressiveness may be sacrificed. It's precisely in these cases that using the API together with the main module will probably result in more readable code.
+
+```elixir
+# The same plot using only the shorthand api. 
+Data.chart({fuels, width: 500, height: 300, title: "Fuels"}, :point,
+  x: "total",
+  y: "solid_fuel",
+  color: {"total", type: :quantitative, scale: [scheme: "category10"]}
+)
+
+# Possible combinations between the API and the VegaLite module
+
+Vl.new(width: 500, height: 300, title: "Fuels")
+|> Data.chart(fuels, :point, x: "total", y: "solid_fuel")
+|> Vl.encode_field(:color, "total", type: :quantitative, scale: [scheme: "category10"])
+
+Vl.new(width: 500, height: 300, title: "Combined")
+|> Data.chart(fuels, :point,
+  x: "total",
+  y: "solid_fuel",
+  color: {"total", type: :quantitative, scale: [scheme: "category10"]}
+)
+
+Data.chart({fuels, width: 500, height: 300, title: "Fuels"}, :point, x: "total", y: "solid_fuel")
+|> Vl.encode_field(:color, "total", type: :quantitative, scale: [scheme: "category10"])
+```
+
+As we can see, the API is flexible enough to allow it to be piped from `VegaLite`, piped to `VegaLite` or both! In principle, you are free to choose the code that best suits your needs, ideally aiming for a balance between conciseness and expressiveness.
+
+## Specialized plots
+
+Specialized plots provide high-level abstractions for commonly used complex charts.
+
+<!-- livebook:{"break_markdown":true} -->
+
+### Heatmap
+
+<!-- livebook:{"break_markdown":true} -->
+
+Plotting heatmaps directly from VegaLite requires a lot of code.
+
+```elixir
+Vl.new(title: "Heatpmap")
+|> Vl.layers([
+  Vl.new()
+  |> Vl.data_from_values(iris)
+  |> Vl.mark(:rect)
+  |> Vl.encode_field(:x, "sepal_length", type: :nominal)
+  |> Vl.encode_field(:y, "sepal_width", type: :nominal)
+  |> Vl.encode_field(:color, "sepal_length", type: :quantitative),
+  Vl.new()
+  |> Vl.data_from_values(iris)
+  |> Vl.mark(:text)
+  |> Vl.encode_field(:x, "sepal_length", type: :nominal)
+  |> Vl.encode_field(:y, "sepal_width", type: :nominal)
+  |> Vl.encode_field(:text, "sepal_length", type: :quantitative)
+])
+```
+
+We can use our already explored shorthand API to simplify it.
+
+```elixir
+Vl.new(title: "Heatpmap")
+|> Vl.layers([
+  Data.chart(iris, :rect,
+    x: {"sepal_length", type: :nominal},
+    y: {"sepal_width", type: :nominal},
+    color: "sepal_length"
+  ),
+  Data.chart(iris, :text,
+    x: {"sepal_length", type: :nominal},
+    y: {"sepal_width", type: :nominal},
+    text: "sepal_length"
+  )
+])
+```
+
+Or we can go even further and use the `VegaLite.Data.heatmap/2` function alone or the `VegaLite.Data.heatmap/3` function in combination with `VegaLite`.
+
+The specialized plots follow the same principle as the shorthand API, they can be combined with the main module, and each argument can also take a list of options to override the defaults.
+
+```elixir
+Data.heatmap({iris, title: "Heatmap"},
+  x: "sepal_length",
+  y: "sepal_width",
+  color: "sepal_length",
+  text: "sepal_length"
+)
+
+Vl.new(title: "Heatmap")
+|> Data.heatmap(iris,
+  x: "sepal_length",
+  y: "sepal_width",
+  color: "sepal_length",
+  text: "sepal_length"
+)
+```

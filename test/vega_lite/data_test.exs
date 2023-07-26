@@ -265,7 +265,7 @@ defmodule VegaLite.DataTest do
                )
     end
 
-    test "heatmap with specified typed" do
+    test "heatmap with specified types" do
       vl =
         Vl.new()
         |> Vl.layers([

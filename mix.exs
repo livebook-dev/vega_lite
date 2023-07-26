@@ -35,7 +35,8 @@ defmodule VegaLite.MixProject do
     [
       main: "VegaLite",
       source_url: "https://github.com/livebook-dev/vega_lite",
-      source_ref: "v#{@version}"
+      source_ref: "v#{@version}",
+      extras: ["guides/data.livemd"]
     ]
   end
 
