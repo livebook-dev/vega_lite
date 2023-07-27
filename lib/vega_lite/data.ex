@@ -14,8 +14,8 @@ defmodule VegaLite.Data do
   @doc """
   Returns the specification for a given data, a mark and a list of fields to be encoded.
 
-  Each argument is accepted as the argument itself or a tuple with the argument and a keyword
-  list of options. All options must follow the specifications of the `VegaLite` module.
+  Each argument is accepted as the argument itself or a keyword list of options.
+  All options must follow the specifications of the `VegaLite` module.
 
   ## Examples
 
@@ -34,7 +34,6 @@ defmodule VegaLite.Data do
       |> Vl.encode_field(:x, "category", type: :nominal)
       |> Vl.encode_field(:y, "score", type: :quantitative)
   """
-  def chart({data, opts}, mark, fields), do: chart(Vl.new(opts), data, mark, fields)
   def chart(data, mark, fields), do: chart(Vl.new(), data, mark, fields)
 
   @doc """
@@ -82,14 +81,9 @@ defmodule VegaLite.Data do
         %{"category" => "B", "score" => 55}
       ]
 
-      Data.heatmap(data, x: "category", y: "score")
-
-      Data.heatmap({data, title: "Heatmap"}, x: "category", y: "score")
-
       Data.heatmap(data, x: "category", y: "score", color: "score", text: "category")
 
   """
-  def heatmap({data, opts}, fields), do: heatmap(Vl.new(opts), data, fields)
   def heatmap(data, fields), do: heatmap(Vl.new(), data, fields)
 
   @doc """
@@ -116,31 +110,33 @@ defmodule VegaLite.Data do
   defp annotated_heatmap(vl, data, fields) do
     text_fields = [text: fields[:text], x: fields[:x], y: fields[:y]]
     fields = List.keydelete(fields, :text, 0)
-    Vl.layers(vl, [chart(data, :rect, fields), chart(data, :text, text_fields)])
+    used_fields = fields |> Keyword.values() |> used_fields()
+
+    vl
+    |> Vl.data_from_values(data, only: used_fields)
+    |> Vl.layers([layer(data, :rect, fields), layer(data, :text, text_fields)])
   end
 
-  defp heatmap_defaults({field, {col, opts}}) when field in [:x, :y] do
-    opts = Keyword.put_new(opts, :type, :nominal)
-    {field, {col, opts}}
+  defp heatmap_defaults({field, [{:field, _col} | _] = opts}) when field in [:x, :y] do
+    {field, Keyword.put_new(opts, :type, :nominal)}
   end
 
   defp heatmap_defaults({field, col}) when field in [:x, :y] do
-    {field, {col, type: :nominal}}
+    {field, [field: col, type: :nominal]}
   end
 
-  defp heatmap_defaults({field, {col, opts}}) when field in [:color, :text] do
-    opts = Keyword.put_new(opts, :type, :quantitative)
-    {field, {col, opts}}
+  defp heatmap_defaults({field, [{:field, _col} | _] = opts}) when field in [:color, :text] do
+    {field, Keyword.put_new(opts, :type, :quantitative)}
   end
 
   defp heatmap_defaults({field, col}) when field in [:color, :text] do
-    {field, {col, type: :quantitative}}
+    {field, [field: col, type: :quantitative]}
   end
 
-  defp enconde_mark(vl, {mark, opts}), do: Vl.mark(vl, mark, opts)
+  defp enconde_mark(vl, [{:type, mark} | opts]), do: Vl.mark(vl, mark, opts)
   defp enconde_mark(vl, mark), do: Vl.mark(vl, mark)
 
-  defp encode_field(schema, cols, field, {col, opts}) do
+  defp encode_field(schema, cols, field, [{:field, col} | opts]) do
     opts = Keyword.put_new(opts, :type, type_for(cols, col))
     Vl.encode_field(schema, field, col, opts)
   end
@@ -149,9 +145,18 @@ defmodule VegaLite.Data do
     Vl.encode_field(schema, field, col, type: type_for(cols, col))
   end
 
+  defp layer(data, mark, fields) do
+    cols = columns_for(data)
+    root = Vl.new() |> enconde_mark(mark)
+
+    for {field, col} <- fields, reduce: root do
+      acc -> encode_field(acc, cols, field, col)
+    end
+  end
+
   defp used_fields(fields) do
     for field <- fields, field, uniq: true do
-      if is_tuple(field), do: elem(field, 0), else: field
+      if is_list(field), do: field[:field], else: field
     end
   end
 
