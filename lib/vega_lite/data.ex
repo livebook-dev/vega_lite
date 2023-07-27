@@ -2,8 +2,10 @@ defmodule VegaLite.Data do
   @moduledoc """
   Data is a VegaLite module designed to provide a shorthand API for commonly used charts and
   high-level abstractions for specialized plots.
+
   Optionally accepts and always returns a valid `VegaLite` spec, fostering flexibility to be used
   alone or in combination with the `VegaLite` module at any level and at any point.
+
   It relies on internal type inference, and although all options can be overridden,
   only data that implements the [Table.Reader](https://hexdocs.pm/table/Table.Reader.html)
   protocol is supported.
@@ -18,6 +20,7 @@ defmodule VegaLite.Data do
 
   @doc """
   Returns the specification for the given arguments.
+
   It can takes a data, a mark and a list of fields to be encoded or
   a valid `VegaLite` specification, a data and a list of fields to be encoded.
 
