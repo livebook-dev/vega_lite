@@ -38,6 +38,27 @@ defmodule VegaLite.DataTest do
       assert vl == Data.chart(@data, [type: :point, line: true], x: "height")
     end
 
+    test "mark from pipe" do
+      vl =
+        Vl.new()
+        |> Vl.data_from_values(@data, only: ["height"])
+        |> Vl.mark(:point, line: true)
+        |> Vl.encode_field(:x, "height", type: :quantitative)
+
+      assert vl == Vl.new() |> Vl.mark(:point, line: true) |> Data.chart(@data, x: "height")
+    end
+
+    test "pipe to mark" do
+      vl =
+        Vl.new()
+        |> Vl.data_from_values(@data, only: ["height"])
+        |> Vl.encode_field(:x, "height", type: :quantitative)
+        |> Vl.mark(:point, line: true)
+
+      assert vl == Vl.new() |> Data.chart(@data, x: "height") |> Vl.mark(:point, line: true)
+      assert vl == Data.chart(@data, x: "height") |> Vl.mark(:point, line: true)
+    end
+
     test "single field with options" do
       vl =
         Vl.new()

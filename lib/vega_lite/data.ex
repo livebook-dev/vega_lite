@@ -12,10 +12,18 @@ defmodule VegaLite.Data do
   alias VegaLite, as: Vl
 
   @doc """
-  Returns the specification for a given data, a mark and a list of fields to be encoded.
+  Returns the specification for a given data and a list of fields to be encoded.
+  """
+  def chart(data, fields), do: chart(Vl.new(), data, fields)
 
-  Each argument is accepted as the argument itself or a keyword list of options.
-  All options must follow the specifications of the `VegaLite` module.
+  @doc """
+  Returns the specification for the given arguments.
+  It can takes a data, a mark and a list of fields to be encoded or
+  a valid `VegaLite` specification, a data and a list of fields to be encoded.
+
+  Each argument that is not a `VegaLite` specification nor a data, is accepted as the argument
+  itself or a keyword list of options. All options must follow the specifications of the
+  `VegaLite` module.
 
   ## Examples
 
@@ -26,7 +34,14 @@ defmodule VegaLite.Data do
 
       Data.chart(data, :bar, x: "category", y: "score")
 
-  The above example achieves the same results as the example below.
+      Vl.new()
+      |> Vl.mark(:bar)
+      |> Data.chart(data, x: "category", y: "score")
+
+      Data.chart(data, x: "category", y: "score")
+      |> Vl.mark(:bar)
+
+  The above examples achieves the same results as the example below.
 
       Vl.new()
       |> Vl.data_from_values(data, only: ["category", "score"])
@@ -34,6 +49,15 @@ defmodule VegaLite.Data do
       |> Vl.encode_field(:x, "category", type: :nominal)
       |> Vl.encode_field(:y, "score", type: :quantitative)
   """
+  def chart(%Vl{} = vl, data, fields) do
+    cols = columns_for(data)
+    used_fields = fields |> Keyword.values() |> used_fields()
+    root = vl |> Vl.data_from_values(data, only: used_fields)
+    for {field, col} <- fields, reduce: root do
+      acc -> encode_field(acc, cols, field, col)
+    end
+  end
+
   def chart(data, mark, fields), do: chart(Vl.new(), data, mark, fields)
 
   @doc """
