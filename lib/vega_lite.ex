@@ -36,8 +36,8 @@ defmodule VegaLite do
       # Map data fields to visual properties of the mark, like position or shape
       |> Vl.encode_field(:x, "iteration", type: :quantitative)
       |> Vl.encode_field(:y, "score", type: :quantitative)
-      # |> Vl.encode(:color, "country", type: :nominal)
-      # |> Vl.encode(:size, "count", type: :quantitative)
+      # |> Vl.encode_field(:color, "country", type: :nominal)
+      # |> Vl.encode_field(:size, "count", type: :quantitative)
 
   Then, you can compose multiple graphics using `layers/2`, `concat/3`,
   `repeat/3` or `facet/3`.
