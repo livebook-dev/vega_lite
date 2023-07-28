@@ -124,9 +124,12 @@ defmodule VegaLite.Data do
   def heatmap(vl, data, fields) do
     fields = standardize_fields(fields) |> Enum.map(&heatmap_defaults/1)
 
-    if fields[:text],
-      do: annotated_heatmap(vl, data, fields),
-      else: chart(vl, data, :rect, fields)
+    case {fields[:x], fields[:y], fields[:text]} do
+      {nil, _, _} -> raise ArgumentError, "the x axis is required to plot a heatmap"
+      {_, nil, _} -> raise ArgumentError, "the y axis is required to plot a heatmap"
+      {_, _, nil} -> chart(vl, data, :rect, fields)
+      _ -> annotated_heatmap(vl, data, fields)
+    end
   end
 
   defp annotated_heatmap(vl, data, fields) do

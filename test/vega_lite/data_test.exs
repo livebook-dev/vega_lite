@@ -270,5 +270,17 @@ defmodule VegaLite.DataTest do
                  text: "height"
                )
     end
+
+    test "raises an error when the x axis is not given" do
+      assert_raise ArgumentError, "the x axis is required to plot a heatmap", fn ->
+        Data.heatmap(@data, y: "y")
+      end
+    end
+
+    test "raises an error when the y axis is not given" do
+      assert_raise ArgumentError, "the y axis is required to plot a heatmap", fn ->
+        Data.heatmap(@data, x: "x", text: "text")
+      end
+    end
   end
 end
