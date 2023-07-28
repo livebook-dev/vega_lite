@@ -15,16 +15,16 @@ defmodule VegaLite.Data do
 
   @doc """
   Returns the specification for a given data and a list of fields to be encoded.
+
+  See `chart/3`.
   """
+  @spec chart(Table.Reader.t(), keyword()) :: VegaLite.t()
   def chart(data, fields), do: chart(Vl.new(), data, fields)
 
   @doc """
-  Returns the specification for the given arguments.
+  Returns the specification for the a given data, a mark and a list of fields to be encoded.
 
-  It can takes a data, a mark and a list of fields to be encoded or
-  a valid `VegaLite` specification, a data and a list of fields to be encoded.
-
-  Each argument that is not a `VegaLite` specification nor a data, is accepted as the argument
+  Each argument that is not a `VegaLite` specification nor a data is accepted as the argument
   itself or a keyword list of options. All options must follow the specifications of the
   `VegaLite` module.
 
@@ -37,13 +37,6 @@ defmodule VegaLite.Data do
 
       Data.chart(data, :bar, x: "category", y: "score")
 
-      Vl.new()
-      |> Vl.mark(:bar)
-      |> Data.chart(data, x: "category", y: "score")
-
-      Data.chart(data, x: "category", y: "score")
-      |> Vl.mark(:bar)
-
   The above examples achieves the same results as the example below.
 
       Vl.new()
@@ -52,6 +45,7 @@ defmodule VegaLite.Data do
       |> Vl.encode_field(:x, "category", type: :nominal)
       |> Vl.encode_field(:y, "score", type: :quantitative)
   """
+  @spec chart(VegaLite.t(), Table.Reader.t(), keyword()) :: VegaLite.t()
   def chart(%Vl{} = vl, data, fields) do
     cols = columns_for(data)
     used_fields = fields |> Keyword.values() |> used_fields()
@@ -59,6 +53,7 @@ defmodule VegaLite.Data do
     build_fields(fields, root, cols)
   end
 
+  @spec chart(Table.Reader.t(), atom() | keyword(), keyword()) :: VegaLite.t()
   def chart(data, mark, fields), do: chart(Vl.new(), data, mark, fields)
 
   @doc """
@@ -74,6 +69,10 @@ defmodule VegaLite.Data do
       Vl.new(title: "With title")
       |> Data.chart(data, :bar, x: "category", y: "score")
 
+      Vl.new(title: "With title")
+      |> Vl.mark(:bar)
+      |> Data.chart(data, x: "category", y: "score")
+
   The above example achieves the same results as the example below.
 
       Vl.new(title: "With title")
@@ -82,6 +81,7 @@ defmodule VegaLite.Data do
       |> Vl.encode_field(:x, "category", type: :nominal)
       |> Vl.encode_field(:y, "score", type: :quantitative)
   """
+  @spec chart(VegaLite.t(), Table.Reader.t(), atom() | keyword(), keyword()) :: VegaLite.t()
   def chart(vl, data, mark, fields) do
     cols = columns_for(data)
     used_fields = fields |> Keyword.values() |> used_fields()
@@ -106,6 +106,7 @@ defmodule VegaLite.Data do
       Data.heatmap(data, x: "category", y: "score", color: "score", text: "category")
 
   """
+  @spec heatmap(Table.Reader.t(), keyword()) :: VegaLite.t()
   def heatmap(data, fields), do: heatmap(Vl.new(), data, fields)
 
   @doc """
@@ -121,6 +122,7 @@ defmodule VegaLite.Data do
       Vl.new(title: "Heatmap", width: 500)
       |> Data.heatmap(data, x: "category", y: "score", color: "score", text: "category")
   """
+  @spec heatmap(VegaLite.t(), Table.Reader.t(), keyword()) :: VegaLite.t()
   def heatmap(vl, data, fields) do
     fields = standardize_fields(fields) |> Enum.map(&heatmap_defaults/1)
 
