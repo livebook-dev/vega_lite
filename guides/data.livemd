@@ -122,11 +122,7 @@ As we can see, the API is flexible enough to allow it to be piped from `VegaLite
 
 Specialized plots provide high-level abstractions for commonly used complex charts.
 
-<!-- livebook:{"break_markdown":true} -->
-
 ### Heatmap
-
-<!-- livebook:{"break_markdown":true} -->
 
 Plotting heatmaps directly from VegaLite requires a lot of code.
 

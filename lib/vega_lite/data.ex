@@ -56,9 +56,7 @@ defmodule VegaLite.Data do
     cols = columns_for(data)
     used_fields = fields |> Keyword.values() |> used_fields()
     root = vl |> Vl.data_from_values(data, only: used_fields)
-    for {field, col} <- fields, reduce: root do
-      acc -> encode_field(acc, cols, field, col)
-    end
+    build_fields(fields, root, cols)
   end
 
   def chart(data, mark, fields), do: chart(Vl.new(), data, mark, fields)
@@ -87,11 +85,8 @@ defmodule VegaLite.Data do
   def chart(vl, data, mark, fields) do
     cols = columns_for(data)
     used_fields = fields |> Keyword.values() |> used_fields()
-    root = vl |> Vl.data_from_values(data, only: used_fields) |> enconde_mark(mark)
-
-    for {field, col} <- fields, reduce: root do
-      acc -> encode_field(acc, cols, field, col)
-    end
+    root = vl |> Vl.data_from_values(data, only: used_fields) |> encode_mark(mark)
+    build_fields(fields, root, cols)
   end
 
   @doc """
@@ -127,7 +122,7 @@ defmodule VegaLite.Data do
       |> Data.heatmap(data, x: "category", y: "score", color: "score", text: "category")
   """
   def heatmap(vl, data, fields) do
-    fields = Enum.map(fields, &heatmap_defaults/1)
+    fields = standardize_fields(fields) |> Enum.map(&heatmap_defaults/1)
 
     if fields[:text],
       do: annotated_heatmap(vl, data, fields),
@@ -136,7 +131,7 @@ defmodule VegaLite.Data do
 
   defp annotated_heatmap(vl, data, fields) do
     text_fields = [text: fields[:text], x: fields[:x], y: fields[:y]]
-    fields = List.keydelete(fields, :text, 0)
+    fields = Keyword.delete(fields, :text)
     used_fields = fields |> Keyword.values() |> used_fields()
 
     vl
@@ -144,41 +139,31 @@ defmodule VegaLite.Data do
     |> Vl.layers([layer(data, :rect, fields), layer(data, :text, text_fields)])
   end
 
-  defp heatmap_defaults({field, [{:field, _col} | _] = opts}) when field in [:x, :y] do
+  defp heatmap_defaults({field, opts}) when field in [:x, :y] do
     {field, Keyword.put_new(opts, :type, :nominal)}
   end
 
-  defp heatmap_defaults({field, col}) when field in [:x, :y] do
-    {field, [field: col, type: :nominal]}
-  end
-
-  defp heatmap_defaults({field, [{:field, _col} | _] = opts}) when field in [:color, :text] do
+  defp heatmap_defaults({field, opts}) when field in [:color, :text] do
     {field, Keyword.put_new(opts, :type, :quantitative)}
   end
 
-  defp heatmap_defaults({field, col}) when field in [:color, :text] do
-    {field, [field: col, type: :quantitative]}
+  defp encode_mark(vl, opts) when is_list(opts) do
+    {mark, opts} = Keyword.pop!(opts, :type)
+    Vl.mark(vl, mark, opts)
   end
 
-  defp enconde_mark(vl, [{:type, mark} | opts]), do: Vl.mark(vl, mark, opts)
-  defp enconde_mark(vl, mark), do: Vl.mark(vl, mark)
+  defp encode_mark(vl, mark), do: Vl.mark(vl, mark)
 
-  defp encode_field(schema, cols, field, [{:field, col} | opts]) do
-    opts = Keyword.put_new(opts, :type, type_for(cols, col))
+  defp encode_field(schema, cols, field, opts) do
+    {col, opts} = Keyword.pop!(opts, :field)
+    opts = Keyword.put_new_lazy(opts, :type, fn -> cols[col] end)
     Vl.encode_field(schema, field, col, opts)
-  end
-
-  defp encode_field(schema, cols, field, col) do
-    Vl.encode_field(schema, field, col, type: type_for(cols, col))
   end
 
   defp layer(data, mark, fields) do
     cols = columns_for(data)
-    root = Vl.new() |> enconde_mark(mark)
-
-    for {field, col} <- fields, reduce: root do
-      acc -> encode_field(acc, cols, field, col)
-    end
+    root = Vl.new() |> encode_mark(mark)
+    build_fields(fields, root, cols)
   end
 
   defp used_fields(fields) do
@@ -187,14 +172,24 @@ defmodule VegaLite.Data do
     end
   end
 
-  defp type_for(data, name), do: get_in(data, [Access.filter(&(&1.name == name)), :type]) |> hd()
+  defp build_fields(fields, root, cols) do
+    fields
+    |> standardize_fields()
+    |> Enum.reduce(root, fn {field, opts}, acc -> encode_field(acc, cols, field, opts) end)
+  end
+
+  defp standardize_fields(fields) do
+    for {field, opts} <- fields do
+      if is_list(opts), do: {field, opts}, else: {field, [field: opts]}
+    end
+  end
 
   defp columns_for(data) do
     with true <- implements?(Table.Reader, data),
          data = {_, %{columns: [_ | _] = columns}, _} <- Table.Reader.init(data),
          true <- Enum.all?(columns, &implements?(String.Chars, &1)) do
       types = infer_types(data)
-      Enum.zip_with(columns, types, fn column, type -> %{name: to_string(column), type: type} end)
+      Enum.zip_with(columns, types, fn column, type -> {to_string(column), type} end) |> Map.new()
     else
       _ -> nil
     end
