@@ -10,7 +10,7 @@ defmodule VegaLite.MixProject do
       version: @version,
       description: @description,
       name: "VegaLite",
-      elixir: "~> 1.7",
+      elixir: "~> 1.12",
       deps: deps(),
       docs: docs(),
       package: package(),
