@@ -30,7 +30,7 @@ defmodule VegaLiteTest do
         """)
         |> Vl.Export.to_json()
 
-      assert json == expected_json
+      assert Jason.decode!(json) == Jason.decode!(expected_json)
     end
 
     test "does not normalize values" do
@@ -64,7 +64,7 @@ defmodule VegaLiteTest do
         """)
         |> Vl.Export.to_json()
 
-      assert json == expected_json
+      assert Jason.decode!(json) == Jason.decode!(expected_json)
     end
 
     test "transforms options to properties" do
