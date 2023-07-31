@@ -20,7 +20,7 @@ Throughout this guide, we will look at how to use the API alone, in combination 
 
 **Limitations**: `VegaLite.Data` relies on internal type inference, and although all options may be overridden, only data that implements the `Table.Reader` protocol is supported.
 
-For meaningful examples, we will use the *fuels* dataset directly from [Explorer](https://hexdocs.pm/explorer/Explorer.html).
+For meaningful examples, we will use the *fuels* dataset directly from `Explorer`
 
 ```elixir
 alias Explorer.DataFrame, as: DF
@@ -61,28 +61,31 @@ Vl.new()
 Plotting a simple chart is a breeze! As we can see from the comparison above, the code becomes much leaner and handleable. However, the API also accepts a list of options for each argument, allowing more complex results.
 
 ```elixir
-# A line plot with point: true
-
-# Without the shorthand api
+# A line plot with point: true without the shorthand api
 Vl.new()
 |> Vl.data_from_values(fuels, only: ["total", "solid_fuel"])
 |> Vl.mark(:line, point: true)
 |> Vl.encode_field(:x, "total", type: :quantitative)
 |> Vl.encode_field(:y, "solid_fuel", type: :quantitative)
-
-Data.chart(fuels, [type: :line, point: true], x: "total", y: "solid_fuel")
 ```
 
 ```elixir
-# The same line plot with a title and a custom width
+# A line plot with point: true using the shorthand api
+Data.chart(fuels, [type: :line, point: true], x: "total", y: "solid_fuel")
+```
 
+Now let's see a bit of iteroperability between the api and the main module. We'll plot the same line chart but now with a title and a custom width.
+
+```elixir
 # Without the shorthand api
 Vl.new(title: "Fuels", width: 400)
 |> Vl.data_from_values(fuels, only: ["total", "solid_fuel"])
 |> Vl.mark(:line, point: true)
 |> Vl.encode_field(:x, "total", type: :quantitative)
 |> Vl.encode_field(:y, "solid_fuel", type: :quantitative)
+```
 
+```elixir
 # With the shorthand api
 Vl.new(title: "Fuels", width: 400)
 |> Data.chart(fuels, [type: :line, point: true], x: "total", y: "solid_fuel")
@@ -99,21 +102,23 @@ Vl.new(width: 500, height: 300, title: "Fuels")
 |> Vl.encode_field(:color, "total", type: :quantitative, scale: [scheme: "category10"])
 ```
 
-In the example above, we have a color channel that requires more customization. While it's possible to get the exact same plot using only the shorthand API, the expressiveness may be sacrificed. It's precisely in these cases that using the API together with the main module will probably result in more readable code.
+In the example above, we have a color channel that requires more customization. While it's possible to get the exact same plot using only the shorthand API, the expressiveness may be sacrificed. It's precisely in these cases that using the API together with the main module will probably result in more readable code. Let's take a look and compare the possible combinations between the API and the `VegaLite` module.
 
 ```elixir
-# Possible combinations between the API and the VegaLite module
-
-Vl.new(width: 500, height: 300, title: "Fuels")
-|> Data.chart(fuels, :point, x: "total", y: "solid_fuel")
-|> Vl.encode_field(:color, "total", type: :quantitative, scale: [scheme: "category10"])
-
+# Using mainly the shorthand api
 Vl.new(width: 500, height: 300, title: "Combined")
 |> Data.chart(fuels, :point,
   x: "total",
   y: "solid_fuel",
   color: [field: "total", type: :quantitative, scale: [scheme: "category10"]]
 )
+```
+
+```elixir
+# Piping the shorthand api into a enconde_field
+Vl.new(width: 500, height: 300, title: "Fuels")
+|> Data.chart(fuels, :point, x: "total", y: "solid_fuel")
+|> Vl.encode_field(:color, "total", type: :quantitative, scale: [scheme: "category10"])
 ```
 
 As we can see, the API is flexible enough to allow it to be piped from `VegaLite`, piped to `VegaLite` or both! In principle, you are free to choose the code that best suits your needs, ideally aiming for a balance between conciseness and expressiveness.
