@@ -20,7 +20,7 @@ Throughout this guide, we will look at how to use the API alone, in combination 
 
 **Limitations**: `VegaLite.Data` relies on internal type inference, and although all options may be overridden, only data that implements the `Table.Reader` protocol is supported.
 
-For meaningful examples, we will use the *fuels* dataset directly from `Explorer`
+For meaningful examples, we will use the *fuels* dataset directly from `Explorer` and one additional `data` variable:
 
 ```elixir
 alias Explorer.DataFrame, as: DF
