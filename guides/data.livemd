@@ -42,7 +42,7 @@ data = [
 
 `VegaLite.Data.chart/3` and `VegaLite.Data.chart/4` are the shorthand API. We will use these functions to get quick and concise plots. It's best for plots that don't require a lot of configuration or customization.
 
-`VegaLite.Data.chart/3` takes 3 arguments: the data, the mark and a list of fields to be encoded while `VegaLite.Data.chart/4` works similarly, but takes a valid `VegaLite` specification as the first argument.
+`VegaLite.Data.chart/3` takes 3 arguments: the data, the mark and a list of fields to encode.
 
 ```elixir
 # A simple bar plot using the shorthand api
