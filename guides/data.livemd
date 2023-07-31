@@ -74,7 +74,7 @@ Vl.new()
 Data.chart(fuels, [type: :line, point: true], x: "total", y: "solid_fuel")
 ```
 
-Now let's see a bit of iteroperability between the api and the main module. We'll plot the same line chart but now with a title and a custom width.
+`VegaLite.Data.chart/4` works similarly but takes a valid `VegaLite` specification as the first argument. Let's see a bit of interoperability between the Data API and the main module. We'll plot the same line chart but now with a title and a custom width.
 
 ```elixir
 # Without the shorthand api
