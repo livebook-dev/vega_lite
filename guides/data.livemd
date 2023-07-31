@@ -18,7 +18,7 @@ The API can be combined with the main `VegaLite` module at any level and at any 
 
 Throughout this guide, we will look at how to use the API alone, in combination with the `VegaLite` module, and also show some comparisons between all the possible paths to achieve the same plotting results.
 
-**Limitations**: `VegaLite.Data` relies on internal type inference, and although all options may be overridden, only data that implements the [Table.Reader](https://hexdocs.pm/table/Table.Reader.html) protocol is supported.
+**Limitations**: `VegaLite.Data` relies on internal type inference, and although all options may be overridden, only data that implements the `Table.Reader` protocol is supported.
 
 For meaningful examples, we will use the *fuels* dataset directly from [Explorer](https://hexdocs.pm/explorer/Explorer.html).
 
