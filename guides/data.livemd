@@ -58,7 +58,7 @@ Vl.new()
 |> Vl.encode_field(:x, "category", type: :nominal)
 ```
 
-Plotting a simple chart is a breeze! As we can see from the comparison above, the code becomes much leaner and handleable. However, the API also accepts a list of options for each argument, allowing more complex results.
+Plotting a simple chart is a breeze! As we can see from the comparison above, the code becomes much more concise. However, the API also accepts a list of options for each argument, allowing more complex charts.
 
 ```elixir
 # A line plot with point: true without the shorthand api
