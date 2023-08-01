@@ -157,7 +157,7 @@ defmodule VegaLite.Data do
     Vl.mark(vl, mark, opts)
   end
 
-  defp encode_mark(vl, mark), do: Vl.mark(vl, mark)
+  defp encode_mark(vl, mark) when is_atom(mark), do: Vl.mark(vl, mark)
 
   defp encode_field(schema, cols, field, opts) do
     {col, opts} = Keyword.pop!(opts, :field)
