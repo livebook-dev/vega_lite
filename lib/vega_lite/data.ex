@@ -48,7 +48,7 @@ defmodule VegaLite.Data do
   @spec chart(VegaLite.t(), Table.Reader.t(), keyword()) :: VegaLite.t()
   def chart(%Vl{} = vl, data, fields) do
     cols = columns_for(data)
-    used_fields = fields |> Keyword.values() |> used_fields()
+    used_fields = used_fields(fields)
     root = vl |> Vl.data_from_values(data, only: used_fields)
     build_fields(fields, root, cols)
   end
@@ -84,7 +84,7 @@ defmodule VegaLite.Data do
   @spec chart(VegaLite.t(), Table.Reader.t(), atom() | keyword(), keyword()) :: VegaLite.t()
   def chart(vl, data, mark, fields) do
     cols = columns_for(data)
-    used_fields = fields |> Keyword.values() |> used_fields()
+    used_fields = used_fields(fields)
     root = vl |> Vl.data_from_values(data, only: used_fields) |> encode_mark(mark)
     build_fields(fields, root, cols)
   end
@@ -136,7 +136,7 @@ defmodule VegaLite.Data do
 
   defp annotated_heatmap(vl, data, fields) do
     text_fields = [text: fields[:text], x: fields[:x], y: fields[:y]]
-    used_fields = fields |> Keyword.values() |> used_fields()
+    used_fields = used_fields(fields)
     rect_fields = Keyword.delete(fields, :text)
 
     vl
@@ -172,7 +172,7 @@ defmodule VegaLite.Data do
   end
 
   defp used_fields(fields) do
-    for field <- fields, field, uniq: true do
+    for {_key, field} <- fields, field, uniq: true do
       if is_list(field), do: field[:field], else: field
     end
   end
