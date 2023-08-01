@@ -135,7 +135,7 @@ defmodule VegaLite.Data do
   end
 
   defp annotated_heatmap(vl, data, fields) do
-    text_fields = [text: fields[:text], x: fields[:x], y: fields[:y]]
+    text_fields = Keyword.take(fields, [:text, :x, :y])
     used_fields = used_fields(fields)
     rect_fields = Keyword.delete(fields, :text)
 
