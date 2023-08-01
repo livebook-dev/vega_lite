@@ -4,7 +4,10 @@ defmodule VegaLite.DataTest do
   alias VegaLite.Data
   alias VegaLite, as: Vl
 
-  @data [%{"height" => 170, "weight" => 80}, %{"height" => 190, "weight" => 85}]
+  @data [
+    %{"height" => 170, "weight" => 80, "unused" => "a"},
+    %{"height" => 190, "weight" => 85, "unused" => "b"}
+  ]
 
   describe "shorthand api" do
     test "single field" do
@@ -147,13 +150,13 @@ defmodule VegaLite.DataTest do
         Vl.new(title: "Heatmap")
         |> Vl.layers([
           Vl.new()
-          |> Vl.data_from_values(@data)
+          |> Vl.data_from_values(@data, only: ["height", "weight"])
           |> Vl.mark(:rect)
           |> Vl.encode_field(:x, "height", type: :nominal)
           |> Vl.encode_field(:y, "weight", type: :nominal)
           |> Vl.encode_field(:color, "height", type: :quantitative),
           Vl.new()
-          |> Vl.data_from_values(@data)
+          |> Vl.data_from_values(@data, only: ["height", "weight"])
           |> Vl.mark(:text)
           |> Vl.encode_field(:x, "height", type: :nominal)
           |> Vl.encode_field(:y, "weight", type: :nominal)
@@ -183,7 +186,7 @@ defmodule VegaLite.DataTest do
     test "simple heatmap" do
       vl =
         Vl.new()
-        |> Vl.data_from_values(@data)
+        |> Vl.data_from_values(@data, only: ["height", "weight"])
         |> Vl.mark(:rect)
         |> Vl.encode_field(:x, "height", type: :nominal)
         |> Vl.encode_field(:y, "weight", type: :nominal)
@@ -194,7 +197,7 @@ defmodule VegaLite.DataTest do
     test "simple heatmap with color" do
       vl =
         Vl.new()
-        |> Vl.data_from_values(@data)
+        |> Vl.data_from_values(@data, only: ["height", "weight"])
         |> Vl.mark(:rect)
         |> Vl.encode_field(:x, "height", type: :nominal)
         |> Vl.encode_field(:y, "weight", type: :nominal)
@@ -206,7 +209,7 @@ defmodule VegaLite.DataTest do
     test "heatmap with color and text" do
       vl =
         Vl.new()
-        |> Vl.data_from_values(@data)
+        |> Vl.data_from_values(@data, only: ["height", "weight"])
         |> Vl.layers([
           Vl.new()
           |> Vl.mark(:rect)
@@ -226,7 +229,7 @@ defmodule VegaLite.DataTest do
     test "heatmap with title" do
       vl =
         Vl.new(title: "Heatmap")
-        |> Vl.data_from_values(@data)
+        |> Vl.data_from_values(@data, only: ["height", "weight"])
         |> Vl.layers([
           Vl.new()
           |> Vl.mark(:rect)
@@ -248,7 +251,7 @@ defmodule VegaLite.DataTest do
     test "heatmap with specified types" do
       vl =
         Vl.new()
-        |> Vl.data_from_values(@data)
+        |> Vl.data_from_values(@data, only: ["height", "weight"])
         |> Vl.layers([
           Vl.new()
           |> Vl.mark(:rect)
