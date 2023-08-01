@@ -172,7 +172,7 @@ defmodule VegaLite.Data do
   end
 
   defp used_fields(fields) do
-    for {_key, field} <- fields, field, uniq: true do
+    for {_key, field} <- fields, uniq: true do
       if is_list(field), do: field[:field], else: field
     end
   end
