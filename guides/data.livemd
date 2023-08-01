@@ -20,7 +20,7 @@ Throughout this guide, we will look at how to use the API alone, in combination 
 
 **Limitations**: `VegaLite.Data` relies on internal type inference, and although all options may be overridden, only data that implements the `Table.Reader` protocol is supported.
 
-For meaningful examples, we will use the *fuels* dataset directly from `Explorer` and one additional `data` variable:
+For meaningful examples, we will use the *fuels* dataset directly from `Explorer`
 
 ```elixir
 alias Explorer.DataFrame, as: DF
@@ -40,17 +40,12 @@ data = [
 
 ## Chart - the shorthand api
 
-`VegaLite.Data.chart/3` and `VegaLite.Data.chart/4` are the shorthand API. We will use these functions to get quick and concise plots. It's best for plots that don't require a lot of configuration or customization.
+`VegaLite.Data.chart/3` and `VegaLite.Data.chart/4` are the shorthand API. We will use these functions to get quick and concise plots. It's shine for plots that don't require a lot of configuration or customization.
 
-`VegaLite.Data.chart/3` takes 3 arguments: the data, the mark and a list of fields to encode.
-
-```elixir
-# A simple bar plot using the shorthand api
-Data.chart(data, :bar, x: "category", y: "score")
-```
+`VegaLite.Data.chart/3` takes 3 arguments: the data, the mark and a list of fields to be encoded while `VegaLite.Data.chart/4` works similarly, but takes a valid `VegaLite` specification as the first argument.
 
 ```elixir
-# The same chart without the shorthand api
+# A simple bar plot
 Vl.new()
 |> Vl.data_from_values(data)
 |> Vl.mark(:bar)
@@ -58,7 +53,12 @@ Vl.new()
 |> Vl.encode_field(:x, "category", type: :nominal)
 ```
 
-Plotting a simple chart is a breeze! As we can see from the comparison above, the code becomes much more concise. However, the API also accepts a list of options for each argument, allowing more complex charts.
+```elixir
+# The same chart with the shorthand api
+Data.chart(data, :bar, x: "category", y: "score")
+```
+
+Plotting a simple chart is a breeze! As we can see from the comparison above, the code becomes much leaner and handleable. However, the API also accepts a list of options for each argument, allowing more complex results.
 
 ```elixir
 # A line plot with point: true without the shorthand api
@@ -74,7 +74,7 @@ Vl.new()
 Data.chart(fuels, [type: :line, point: true], x: "total", y: "solid_fuel")
 ```
 
-`VegaLite.Data.chart/4` works similarly but takes a valid `VegaLite` specification as the first argument. Let's see a bit of interoperability between the Data API and the main module. We'll plot the same line chart but now with a title and a custom width.
+Now let's see a bit of iteroperability between the api and the main module. We'll plot the same line chart but now with a title and a custom width.
 
 ```elixir
 # Without the shorthand api
