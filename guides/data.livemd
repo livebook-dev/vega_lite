@@ -4,8 +4,7 @@
 Mix.install([
   {:explorer, "~> 0.6.1"},
   {:kino, "~> 0.10.0"},
-  {:vega_lite,
-   git: "https://github.com/cristineguadelupe/vega_lite", branch: "cg-stats", override: true},
+  {:vega_lite, github: "livebook-dev/vega_lite", override: true},
   {:kino_vega_lite, "~> 0.1.9"}
 ])
 ```
