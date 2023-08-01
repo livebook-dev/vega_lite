@@ -128,6 +128,22 @@ defmodule VegaLite.DataTest do
                )
     end
 
+    test "piped into VegaLite with extra fields" do
+      vl =
+        Vl.new()
+        |> Vl.data_from_values(@data, only: ["height", "weight"])
+        |> Vl.mark(:point)
+        |> Vl.encode_field(:x, "height", type: :quantitative)
+        |> Vl.encode_field(:color, "weight", type: :quantitative, scale: [scheme: "category10"])
+
+      assert vl ==
+               Data.chart(@data, :point, x: "height", extra_fields: ["weight"])
+               |> Vl.encode_field(:color, "weight",
+                 type: :quantitative,
+                 scale: [scheme: "category10"]
+               )
+    end
+
     test "piped from and into VegaLite" do
       vl =
         Vl.new(title: "With title")
@@ -140,6 +156,23 @@ defmodule VegaLite.DataTest do
                Vl.new(title: "With title")
                |> Data.chart(@data, :point, x: "height")
                |> Vl.encode_field(:color, "height",
+                 type: :quantitative,
+                 scale: [scheme: "category10"]
+               )
+    end
+
+    test "piped from and into VegaLite with extra fields" do
+      vl =
+        Vl.new(title: "With title")
+        |> Vl.data_from_values(@data, only: ["height", "weight"])
+        |> Vl.mark(:point)
+        |> Vl.encode_field(:x, "height", type: :quantitative)
+        |> Vl.encode_field(:color, "weight", type: :quantitative, scale: [scheme: "category10"])
+
+      assert vl ==
+               Vl.new(title: "With title")
+               |> Data.chart(@data, :point, x: "height", extra_fields: ["weight"])
+               |> Vl.encode_field(:color, "weight",
                  type: :quantitative,
                  scale: [scheme: "category10"]
                )

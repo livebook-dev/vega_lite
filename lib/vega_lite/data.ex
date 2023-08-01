@@ -47,8 +47,7 @@ defmodule VegaLite.Data do
   """
   @spec chart(VegaLite.t(), Table.Reader.t(), keyword()) :: VegaLite.t()
   def chart(%Vl{} = vl, data, fields) do
-    cols = columns_for(data)
-    used_fields = used_fields(fields)
+    {cols, fields, used_fields} = build_options(data, fields)
     root = vl |> Vl.data_from_values(data, only: used_fields)
     build_fields(fields, root, cols)
   end
@@ -83,8 +82,7 @@ defmodule VegaLite.Data do
   """
   @spec chart(VegaLite.t(), Table.Reader.t(), atom() | keyword(), keyword()) :: VegaLite.t()
   def chart(vl, data, mark, fields) do
-    cols = columns_for(data)
-    used_fields = used_fields(fields)
+    {cols, fields, used_fields} = build_options(data, fields)
     root = vl |> Vl.data_from_values(data, only: used_fields) |> encode_mark(mark)
     build_fields(fields, root, cols)
   end
@@ -171,10 +169,18 @@ defmodule VegaLite.Data do
     build_fields(fields, root, cols)
   end
 
+  defp used_fields(fields, nil), do: used_fields(fields)
+  defp used_fields(fields, extra_fields), do: used_fields(fields) ++ [extra_fields]
+
   defp used_fields(fields) do
     for {_key, field} <- fields, uniq: true do
       if is_list(field), do: field[:field], else: field
     end
+  end
+
+  defp build_options(data, fields) do
+    {extra_fields, fields} = Keyword.pop(fields, :extra_fields)
+    {columns_for(data), fields, used_fields(fields, extra_fields)}
   end
 
   defp build_fields(fields, root, cols) do
