@@ -136,12 +136,12 @@ defmodule VegaLite.Data do
 
   defp annotated_heatmap(vl, data, fields) do
     text_fields = [text: fields[:text], x: fields[:x], y: fields[:y]]
-    fields = Keyword.delete(fields, :text)
     used_fields = fields |> Keyword.values() |> used_fields()
+    rect_fields = Keyword.delete(fields, :text)
 
     vl
     |> Vl.data_from_values(data, only: used_fields)
-    |> Vl.layers([layer(data, :rect, fields), layer(data, :text, text_fields)])
+    |> Vl.layers([layer(data, :rect, rect_fields), layer(data, :text, text_fields)])
   end
 
   defp heatmap_defaults({field, opts}) when field in [:x, :y] do

@@ -5,8 +5,8 @@ defmodule VegaLite.DataTest do
   alias VegaLite, as: Vl
 
   @data [
-    %{"height" => 170, "weight" => 80, "unused" => "a"},
-    %{"height" => 190, "weight" => 85, "unused" => "b"}
+    %{"height" => 170, "weight" => 80, "width" => 10, "unused" => "a"},
+    %{"height" => 190, "weight" => 85, "width" => 20, "unused" => "b"}
   ]
 
   describe "shorthand api" do
@@ -272,6 +272,26 @@ defmodule VegaLite.DataTest do
                  color: [field: "height", type: :nominal],
                  text: "height"
                )
+    end
+
+    test "heatmap with a text field different from the axes" do
+      vl =
+        Vl.new()
+        |> Vl.data_from_values(@data, only: ["height", "weight", "width"])
+        |> Vl.layers([
+          Vl.new()
+          |> Vl.mark(:rect)
+          |> Vl.encode_field(:x, "height", type: :nominal)
+          |> Vl.encode_field(:y, "weight", type: :nominal)
+          |> Vl.encode_field(:color, "height", type: :quantitative),
+          Vl.new()
+          |> Vl.mark(:text)
+          |> Vl.encode_field(:x, "height", type: :nominal)
+          |> Vl.encode_field(:y, "weight", type: :nominal)
+          |> Vl.encode_field(:text, "width", type: :quantitative)
+        ])
+
+      assert vl == Data.heatmap(@data, x: "height", y: "weight", color: "height", text: "width")
     end
 
     test "raises an error when the x axis is not given" do
