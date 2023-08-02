@@ -59,7 +59,7 @@ defmodule VegaLite.Data do
   def chart(%Vl{} = vl, data, fields) do
     {cols, fields, used_fields} = build_options(data, fields)
     root = vl |> Vl.data_from_values(data, only: used_fields)
-    build_fields(fields, root, cols)
+    encode_fields(fields, root, cols)
   end
 
   @spec chart(Table.Reader.t(), atom() | keyword(), keyword()) :: VegaLite.t()
@@ -94,7 +94,7 @@ defmodule VegaLite.Data do
   def chart(vl, data, mark, fields) do
     {cols, fields, used_fields} = build_options(data, fields)
     root = vl |> Vl.data_from_values(data, only: used_fields) |> encode_mark(mark)
-    build_fields(fields, root, cols)
+    encode_fields(fields, root, cols)
   end
 
   @doc """
@@ -132,33 +132,40 @@ defmodule VegaLite.Data do
   """
   @spec heatmap(VegaLite.t(), Table.Reader.t(), keyword()) :: VegaLite.t()
   def heatmap(vl, data, fields) do
-    fields = standardize_fields(fields) |> Enum.map(&heatmap_defaults/1)
-
-    case {fields[:x], fields[:y], fields[:text]} do
-      {nil, _, _} -> raise ArgumentError, "the x axis is required to plot a heatmap"
-      {_, nil, _} -> raise ArgumentError, "the y axis is required to plot a heatmap"
-      {_, _, nil} -> chart(vl, data, :rect, fields)
-      _ -> annotated_heatmap(vl, data, fields)
+    for key <- [:x, :y], is_nil(fields[key]) do
+      raise ArgumentError, "the #{key} axis is required to plot a heatmap"
     end
-  end
 
-  defp annotated_heatmap(vl, data, fields) do
+    {cols, fields, used_fields} = build_options(data, fields, &heatmap_defaults/2)
     text_fields = Keyword.take(fields, [:text, :x, :y])
-    used_fields = used_fields(fields)
     rect_fields = Keyword.delete(fields, :text)
+
+    layers =
+      [encode_layer(cols, :rect, rect_fields)] ++
+        if fields[:text] do
+          [encode_layer(cols, :text, text_fields)]
+        else
+          []
+        end
 
     vl
     |> Vl.data_from_values(data, only: used_fields)
-    |> Vl.layers([layer(data, :rect, rect_fields), layer(data, :text, text_fields)])
+    |> Vl.layers(layers)
   end
 
-  defp heatmap_defaults({field, opts}) when field in [:x, :y] do
-    {field, Keyword.put_new(opts, :type, :nominal)}
+  defp heatmap_defaults(field, opts) when field in [:x, :y] do
+    Keyword.put_new(opts, :type, :nominal)
   end
 
-  defp heatmap_defaults({field, opts}) when field in [:color, :text] do
-    {field, Keyword.put_new(opts, :type, :quantitative)}
+  defp heatmap_defaults(field, opts) when field in [:color, :text] do
+    Keyword.put_new(opts, :type, :quantitative)
   end
+
+  defp heatmap_defaults(_field, opts) do
+    opts
+  end
+
+  ## Shared helpers
 
   defp encode_mark(vl, opts) when is_list(opts) do
     {mark, opts} = Keyword.pop!(opts, :type)
@@ -167,16 +174,25 @@ defmodule VegaLite.Data do
 
   defp encode_mark(vl, mark) when is_atom(mark), do: Vl.mark(vl, mark)
 
+  defp encode_fields(fields, root, cols) do
+    Enum.reduce(fields, root, fn {field, opts}, acc -> encode_field(acc, cols, field, opts) end)
+  end
+
   defp encode_field(schema, cols, field, opts) do
     {col, opts} = Keyword.pop!(opts, :field)
     opts = Keyword.put_new_lazy(opts, :type, fn -> cols[col] end)
     Vl.encode_field(schema, field, col, opts)
   end
 
-  defp layer(data, mark, fields) do
-    cols = columns_for(data)
+  defp encode_layer(cols, mark, fields) do
     root = Vl.new() |> encode_mark(mark)
-    build_fields(fields, root, cols)
+    encode_fields(fields, root, cols)
+  end
+
+  defp build_options(data, fields, fun \\ fn _field, opts -> opts end) do
+    {extra_fields, fields} = Keyword.pop(fields, :extra_fields)
+    used_fields = Enum.uniq(used_fields(fields) ++ List.wrap(extra_fields))
+    {columns_for(data), standardize_fields(fields, fun), used_fields}
   end
 
   defp used_fields(fields) do
@@ -185,23 +201,14 @@ defmodule VegaLite.Data do
     end
   end
 
-  defp build_options(data, fields) do
-    {extra_fields, fields} = Keyword.pop(fields, :extra_fields)
-    used_fields = Enum.uniq(used_fields(fields) ++ List.wrap(extra_fields))
-    {columns_for(data), fields, used_fields}
-  end
-
-  defp build_fields(fields, root, cols) do
-    fields
-    |> standardize_fields()
-    |> Enum.reduce(root, fn {field, opts}, acc -> encode_field(acc, cols, field, opts) end)
-  end
-
-  defp standardize_fields(fields) do
+  defp standardize_fields(fields, fun) do
     for {field, opts} <- fields do
-      if is_list(opts), do: {field, opts}, else: {field, [field: opts]}
+      opts = if is_list(opts), do: fun.(field, opts), else: fun.(field, field: opts)
+      {field, opts}
     end
   end
+
+  ## Infer types
 
   defp columns_for(data) do
     with true <- implements?(Table.Reader, data),
