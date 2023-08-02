@@ -133,24 +133,54 @@ defmodule VegaLite.Data do
   @spec heatmap(VegaLite.t(), Table.Reader.t(), keyword()) :: VegaLite.t()
   def heatmap(vl, data, fields) do
     for key <- [:x, :y], is_nil(fields[key]) do
-      raise ArgumentError, "the #{key} axis is required to plot a heatmap"
+      raise ArgumentError, "the #{key} field is required to plot a heatmap"
     end
 
-    {cols, fields, used_fields} = build_options(data, fields, &heatmap_defaults/2)
-    text_fields = Keyword.take(fields, [:text, :x, :y])
-    rect_fields = Keyword.delete(fields, :text)
+    opts = build_options(data, fields, &heatmap_defaults/2)
+    build_heatmap_layers(vl, data, opts)
+  end
 
-    layers =
-      [encode_layer(cols, :rect, rect_fields)] ++
-        if fields[:text] do
-          [encode_layer(cols, :text, text_fields)]
-        else
-          []
-        end
+  @doc """
+  Returns the specification of a density heat map for a given data and a list of fields to be encoded.
 
-    vl
-    |> Vl.data_from_values(data, only: used_fields)
-    |> Vl.layers(layers)
+  As a specialized chart, the density heatmap expects the `:x` and `:y` axes, a `:color` field and
+  optionally a `:text` field. All data must be `:quantitative` and the default aggregation
+  function is `:count`.
+
+  ## Examples
+
+      data = [
+        %{"total_bill" => 16.99, "tip" => 1.0},
+        %{"total_bill" => 10.34, "tip" => 1.66}
+      ]
+
+      Data.density_heatmap(data, x: "total_bill", y: "tip", color: "total_bill", text: "tip")
+
+  """
+  @spec density_heatmap(Table.Reader.t(), keyword()) :: VegaLite.t()
+  def density_heatmap(data, fields), do: density_heatmap(Vl.new(), data, fields)
+
+  @doc """
+  Same as density_heatmap/2, but takes a valid `VegaLite` specification as the first argument.
+
+  ## Examples
+
+      data = [
+        %{"total_bill" => 16.99, "tip" => 1.0},
+        %{"total_bill" => 10.34, "tip" => 1.66}
+      ]
+
+      Vl.new(title: "Density Heatmap", width: 500)
+      |> Data.heatmap(data, x: "total_bill", y: "tip", color: "total_bill", text: "tip")
+  """
+  @spec density_heatmap(VegaLite.t(), Table.Reader.t(), keyword()) :: VegaLite.t()
+  def density_heatmap(vl, data, fields) do
+    for key <- [:x, :y, :color], is_nil(fields[key]) do
+      raise ArgumentError, "the #{key} field is required to plot a density heatmap"
+    end
+
+    opts = build_options(data, fields, &density_heatmap_defaults/2)
+    build_heatmap_layers(vl, data, opts)
   end
 
   defp heatmap_defaults(field, opts) when field in [:x, :y] do
@@ -162,6 +192,18 @@ defmodule VegaLite.Data do
   end
 
   defp heatmap_defaults(_field, opts) do
+    opts
+  end
+
+  defp density_heatmap_defaults(field, opts) when field in [:x, :y] do
+    opts |> Keyword.put_new(:type, :quantitative) |> Keyword.put_new(:bin, true)
+  end
+
+  defp density_heatmap_defaults(field, opts) when field in [:color, :text] do
+    opts |> Keyword.put_new(:type, :quantitative) |> Keyword.put_new(:aggregate, :count)
+  end
+
+  defp density_heatmap_defaults(_field, opts) do
     opts
   end
 
@@ -193,6 +235,23 @@ defmodule VegaLite.Data do
     {extra_fields, fields} = Keyword.pop(fields, :extra_fields)
     used_fields = Enum.uniq(used_fields(fields) ++ List.wrap(extra_fields))
     {columns_for(data), standardize_fields(fields, fun), used_fields}
+  end
+
+  defp build_heatmap_layers(vl, data, {cols, fields, used_fields}) do
+    text_fields = Keyword.take(fields, [:text, :x, :y])
+    rect_fields = Keyword.delete(fields, :text)
+
+    layers =
+      [encode_layer(cols, :rect, rect_fields)] ++
+        if fields[:text] do
+          [encode_layer(cols, :text, text_fields)]
+        else
+          []
+        end
+
+    vl
+    |> Vl.data_from_values(data, only: used_fields)
+    |> Vl.layers(layers)
   end
 
   defp used_fields(fields) do

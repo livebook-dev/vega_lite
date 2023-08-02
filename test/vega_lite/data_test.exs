@@ -339,15 +339,185 @@ defmodule VegaLite.DataTest do
       assert vl == Data.heatmap(@data, x: "height", y: "weight", color: "height", text: "width")
     end
 
-    test "raises an error when the x axis is not given" do
-      assert_raise ArgumentError, "the x axis is required to plot a heatmap", fn ->
+    test "raises an error when the x field is not given" do
+      assert_raise ArgumentError, "the x field is required to plot a heatmap", fn ->
         Data.heatmap(@data, y: "y")
       end
     end
 
-    test "raises an error when the y axis is not given" do
-      assert_raise ArgumentError, "the y axis is required to plot a heatmap", fn ->
+    test "raises an error when the y field is not given" do
+      assert_raise ArgumentError, "the y field is required to plot a heatmap", fn ->
         Data.heatmap(@data, x: "x", text: "text")
+      end
+    end
+  end
+
+  describe "density heatmap" do
+    test "simple density heatmap" do
+      vl =
+        Vl.new()
+        |> Vl.data_from_values(@data, only: ["height", "weight"])
+        |> Vl.layers([
+          Vl.new()
+          |> Vl.mark(:rect)
+          |> Vl.encode_field(:x, "height", type: :quantitative, bin: true)
+          |> Vl.encode_field(:y, "weight", type: :quantitative, bin: true)
+          |> Vl.encode_field(:color, "height", type: :quantitative, aggregate: :count)
+        ])
+
+      assert vl == Data.density_heatmap(@data, x: "height", y: "weight", color: "height")
+    end
+
+    test "with title" do
+      vl =
+        Vl.new(title: "Density heatmap")
+        |> Vl.data_from_values(@data, only: ["height", "weight"])
+        |> Vl.layers([
+          Vl.new()
+          |> Vl.mark(:rect)
+          |> Vl.encode_field(:x, "height", type: :quantitative, bin: true)
+          |> Vl.encode_field(:y, "weight", type: :quantitative, bin: true)
+          |> Vl.encode_field(:color, "height", type: :quantitative, aggregate: :count)
+        ])
+
+      assert vl ==
+               Vl.new(title: "Density heatmap")
+               |> Data.density_heatmap(@data, x: "height", y: "weight", color: "height")
+    end
+
+    test "with specified bins" do
+      vl =
+        Vl.new()
+        |> Vl.data_from_values(@data, only: ["height", "weight"])
+        |> Vl.layers([
+          Vl.new()
+          |> Vl.mark(:rect)
+          |> Vl.encode_field(:x, "height", type: :quantitative, bin: [maxbins: 10])
+          |> Vl.encode_field(:y, "weight", type: :quantitative, bin: [maxbins: 10])
+          |> Vl.encode_field(:color, "height", type: :quantitative, aggregate: :count)
+        ])
+
+      assert vl ==
+               Data.density_heatmap(@data,
+                 x: [field: "height", bin: [maxbins: 10]],
+                 y: [field: "weight", bin: [maxbins: 10]],
+                 color: "height"
+               )
+    end
+
+    test "with specified aggregate for color" do
+      vl =
+        Vl.new()
+        |> Vl.data_from_values(@data, only: ["height", "weight"])
+        |> Vl.layers([
+          Vl.new()
+          |> Vl.mark(:rect)
+          |> Vl.encode_field(:x, "height", type: :quantitative, bin: true)
+          |> Vl.encode_field(:y, "weight", type: :quantitative, bin: true)
+          |> Vl.encode_field(:color, "height", type: :quantitative, aggregate: :mean)
+        ])
+
+      assert vl ==
+               Data.density_heatmap(@data,
+                 x: "height",
+                 y: "weight",
+                 color: [field: "height", aggregate: :mean]
+               )
+    end
+
+    test "with text" do
+      vl =
+        Vl.new()
+        |> Vl.data_from_values(@data, only: ["height", "weight"])
+        |> Vl.layers([
+          Vl.new()
+          |> Vl.mark(:rect)
+          |> Vl.encode_field(:x, "height", type: :quantitative, bin: true)
+          |> Vl.encode_field(:y, "weight", type: :quantitative, bin: true)
+          |> Vl.encode_field(:color, "height", type: :quantitative, aggregate: :count),
+          Vl.new()
+          |> Vl.mark(:text)
+          |> Vl.encode_field(:x, "height", type: :quantitative, bin: true)
+          |> Vl.encode_field(:y, "weight", type: :quantitative, bin: true)
+          |> Vl.encode_field(:text, "height", type: :quantitative, aggregate: :count)
+        ])
+
+      assert vl ==
+               Data.density_heatmap(@data,
+                 x: "height",
+                 y: "weight",
+                 color: "height",
+                 text: "height"
+               )
+    end
+
+    test "with specified aggregate for text" do
+      vl =
+        Vl.new()
+        |> Vl.data_from_values(@data, only: ["height", "weight"])
+        |> Vl.layers([
+          Vl.new()
+          |> Vl.mark(:rect)
+          |> Vl.encode_field(:x, "height", type: :quantitative, bin: true)
+          |> Vl.encode_field(:y, "weight", type: :quantitative, bin: true)
+          |> Vl.encode_field(:color, "height", type: :quantitative, aggregate: :count),
+          Vl.new()
+          |> Vl.mark(:text)
+          |> Vl.encode_field(:x, "height", type: :quantitative, bin: true)
+          |> Vl.encode_field(:y, "weight", type: :quantitative, bin: true)
+          |> Vl.encode_field(:text, "height", type: :quantitative, aggregate: :mean)
+        ])
+
+      assert vl ==
+               Data.density_heatmap(@data,
+                 x: "height",
+                 y: "weight",
+                 color: "height",
+                 text: [field: "height", aggregate: :mean]
+               )
+    end
+
+    test "with text different from the axes" do
+      vl =
+        Vl.new()
+        |> Vl.data_from_values(@data, only: ["height", "weight", "width"])
+        |> Vl.layers([
+          Vl.new()
+          |> Vl.mark(:rect)
+          |> Vl.encode_field(:x, "height", type: :quantitative, bin: true)
+          |> Vl.encode_field(:y, "weight", type: :quantitative, bin: true)
+          |> Vl.encode_field(:color, "height", type: :quantitative, aggregate: :count),
+          Vl.new()
+          |> Vl.mark(:text)
+          |> Vl.encode_field(:x, "height", type: :quantitative, bin: true)
+          |> Vl.encode_field(:y, "weight", type: :quantitative, bin: true)
+          |> Vl.encode_field(:text, "width", type: :quantitative, aggregate: :count)
+        ])
+
+      assert vl ==
+               Data.density_heatmap(@data,
+                 x: "height",
+                 y: "weight",
+                 color: "height",
+                 text: "width"
+               )
+    end
+
+    test "raises an error when the x field is not given" do
+      assert_raise ArgumentError, "the x field is required to plot a density heatmap", fn ->
+        Data.density_heatmap(@data, y: "y")
+      end
+    end
+
+    test "raises an error when the y field is not given" do
+      assert_raise ArgumentError, "the y field is required to plot a density heatmap", fn ->
+        Data.density_heatmap(@data, x: "x", text: "text")
+      end
+    end
+
+    test "raises an error when the color field is not given" do
+      assert_raise ArgumentError, "the color field is required to plot a density heatmap", fn ->
+        Data.density_heatmap(@data, x: "x", y: "y")
       end
     end
   end
