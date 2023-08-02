@@ -137,7 +137,7 @@ defmodule VegaLite.Data do
     end
 
     opts = build_options(data, fields, &heatmap_defaults/2)
-    build_layers(vl, data, opts)
+    build_heatmap_layers(vl, data, opts)
   end
 
   @doc """
@@ -180,7 +180,7 @@ defmodule VegaLite.Data do
     end
 
     opts = build_options(data, fields, &density_heatmap_defaults/2)
-    build_layers(vl, data, opts)
+    build_heatmap_layers(vl, data, opts)
   end
 
   defp heatmap_defaults(field, opts) when field in [:x, :y] do
@@ -237,7 +237,7 @@ defmodule VegaLite.Data do
     {columns_for(data), standardize_fields(fields, fun), used_fields}
   end
 
-  defp build_layers(vl, data, {cols, fields, used_fields}) do
+  defp build_heatmap_layers(vl, data, {cols, fields, used_fields}) do
     text_fields = Keyword.take(fields, [:text, :x, :y])
     rect_fields = Keyword.delete(fields, :text)
 
