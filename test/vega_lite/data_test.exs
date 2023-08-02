@@ -339,14 +339,14 @@ defmodule VegaLite.DataTest do
       assert vl == Data.heatmap(@data, x: "height", y: "weight", color: "height", text: "width")
     end
 
-    test "raises an error when the x axis is not given" do
-      assert_raise ArgumentError, "the x axis is required to plot a heatmap", fn ->
+    test "raises an error when the x field is not given" do
+      assert_raise ArgumentError, "the x field is required to plot a heatmap", fn ->
         Data.heatmap(@data, y: "y")
       end
     end
 
-    test "raises an error when the y axis is not given" do
-      assert_raise ArgumentError, "the y axis is required to plot a heatmap", fn ->
+    test "raises an error when the y field is not given" do
+      assert_raise ArgumentError, "the y field is required to plot a heatmap", fn ->
         Data.heatmap(@data, x: "x", text: "text")
       end
     end
@@ -503,20 +503,20 @@ defmodule VegaLite.DataTest do
                )
     end
 
-    test "raises an error when the x axis is not given" do
-      assert_raise ArgumentError, "the x axis is required to plot a density heatmap", fn ->
+    test "raises an error when the x field is not given" do
+      assert_raise ArgumentError, "the x field is required to plot a density heatmap", fn ->
         Data.density_heatmap(@data, y: "y")
       end
     end
 
-    test "raises an error when the y axis is not given" do
-      assert_raise ArgumentError, "the y axis is required to plot a density heatmap", fn ->
+    test "raises an error when the y field is not given" do
+      assert_raise ArgumentError, "the y field is required to plot a density heatmap", fn ->
         Data.density_heatmap(@data, x: "x", text: "text")
       end
     end
 
     test "raises an error when the color field is not given" do
-      assert_raise ArgumentError, "a color field is required to plot a density heatmap", fn ->
+      assert_raise ArgumentError, "the color field is required to plot a density heatmap", fn ->
         Data.density_heatmap(@data, x: "x", y: "y")
       end
     end

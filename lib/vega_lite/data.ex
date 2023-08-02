@@ -133,24 +133,11 @@ defmodule VegaLite.Data do
   @spec heatmap(VegaLite.t(), Table.Reader.t(), keyword()) :: VegaLite.t()
   def heatmap(vl, data, fields) do
     for key <- [:x, :y], is_nil(fields[key]) do
-      raise ArgumentError, "the #{key} axis is required to plot a heatmap"
+      raise ArgumentError, "the #{key} field is required to plot a heatmap"
     end
 
-    {cols, fields, used_fields} = build_options(data, fields, &heatmap_defaults/2)
-    text_fields = Keyword.take(fields, [:text, :x, :y])
-    rect_fields = Keyword.delete(fields, :text)
-
-    layers =
-      [encode_layer(cols, :rect, rect_fields)] ++
-        if fields[:text] do
-          [encode_layer(cols, :text, text_fields)]
-        else
-          []
-        end
-
-    vl
-    |> Vl.data_from_values(data, only: used_fields)
-    |> Vl.layers(layers)
+    opts = build_options(data, fields, &heatmap_defaults/2)
+    build_layers(vl, data, opts)
   end
 
   @doc """
@@ -188,29 +175,12 @@ defmodule VegaLite.Data do
   """
   @spec density_heatmap(VegaLite.t(), Table.Reader.t(), keyword()) :: VegaLite.t()
   def density_heatmap(vl, data, fields) do
-    for key <- [:x, :y], is_nil(fields[key]) do
-      raise ArgumentError, "the #{key} axis is required to plot a density heatmap"
+    for key <- [:x, :y, :color], is_nil(fields[key]) do
+      raise ArgumentError, "the #{key} field is required to plot a density heatmap"
     end
 
-    if !fields[:color] do
-      raise ArgumentError, "a color field is required to plot a density heatmap"
-    end
-
-    {cols, fields, used_fields} = build_options(data, fields, &density_heatmap_defaults/2)
-    text_fields = Keyword.take(fields, [:text, :x, :y])
-    rect_fields = Keyword.delete(fields, :text)
-
-    layers =
-      [encode_layer(cols, :rect, rect_fields)] ++
-        if fields[:text] do
-          [encode_layer(cols, :text, text_fields)]
-        else
-          []
-        end
-
-    vl
-    |> Vl.data_from_values(data, only: used_fields)
-    |> Vl.layers(layers)
+    opts = build_options(data, fields, &density_heatmap_defaults/2)
+    build_layers(vl, data, opts)
   end
 
   defp heatmap_defaults(field, opts) when field in [:x, :y] do
@@ -265,6 +235,23 @@ defmodule VegaLite.Data do
     {extra_fields, fields} = Keyword.pop(fields, :extra_fields)
     used_fields = Enum.uniq(used_fields(fields) ++ List.wrap(extra_fields))
     {columns_for(data), standardize_fields(fields, fun), used_fields}
+  end
+
+  defp build_layers(vl, data, {cols, fields, used_fields}) do
+    text_fields = Keyword.take(fields, [:text, :x, :y])
+    rect_fields = Keyword.delete(fields, :text)
+
+    layers =
+      [encode_layer(cols, :rect, rect_fields)] ++
+        if fields[:text] do
+          [encode_layer(cols, :text, text_fields)]
+        else
+          []
+        end
+
+    vl
+    |> Vl.data_from_values(data, only: used_fields)
+    |> Vl.layers(layers)
   end
 
   defp used_fields(fields) do
