@@ -24,9 +24,16 @@ defmodule VegaLite.Data do
   @doc """
   Returns the specification for the a given data, a mark and a list of fields to be encoded.
 
+  Uses a subset of the used fields from the data by default.
+  More fields can be added using the `:extra_fields` option.
+
   Each argument that is not a `VegaLite` specification nor a data is accepted as the argument
   itself or a keyword list of options. All options must follow the specifications of the
-  `VegaLite` module.
+  `VegaLite` module, except `:extra_fields`.
+
+  # Specific options
+
+    * `:extra_fields` - adds extra fields to the data subset for later use
 
   ## Examples
 
@@ -36,6 +43,9 @@ defmodule VegaLite.Data do
       ]
 
       Data.chart(data, :bar, x: "category", y: "score")
+
+      Data.chart(data, :bar, x: "category", extra_fields: ["score"])
+      |> Vl.encode_field(:y, "score", type: :quantitative)
 
   The above examples achieves the same results as the example below.
 
@@ -47,8 +57,7 @@ defmodule VegaLite.Data do
   """
   @spec chart(VegaLite.t(), Table.Reader.t(), keyword()) :: VegaLite.t()
   def chart(%Vl{} = vl, data, fields) do
-    cols = columns_for(data)
-    used_fields = used_fields(fields)
+    {cols, fields, used_fields} = build_options(data, fields)
     root = vl |> Vl.data_from_values(data, only: used_fields)
     build_fields(fields, root, cols)
   end
@@ -83,8 +92,7 @@ defmodule VegaLite.Data do
   """
   @spec chart(VegaLite.t(), Table.Reader.t(), atom() | keyword(), keyword()) :: VegaLite.t()
   def chart(vl, data, mark, fields) do
-    cols = columns_for(data)
-    used_fields = used_fields(fields)
+    {cols, fields, used_fields} = build_options(data, fields)
     root = vl |> Vl.data_from_values(data, only: used_fields) |> encode_mark(mark)
     build_fields(fields, root, cols)
   end
@@ -172,9 +180,15 @@ defmodule VegaLite.Data do
   end
 
   defp used_fields(fields) do
-    for {_key, field} <- fields, uniq: true do
+    for {_key, field} <- fields do
       if is_list(field), do: field[:field], else: field
     end
+  end
+
+  defp build_options(data, fields) do
+    {extra_fields, fields} = Keyword.pop(fields, :extra_fields)
+    used_fields = Enum.uniq(used_fields(fields) ++ List.wrap(extra_fields))
+    {columns_for(data), fields, used_fields}
   end
 
   defp build_fields(fields, root, cols) do
