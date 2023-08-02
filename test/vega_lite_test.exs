@@ -198,7 +198,7 @@ defmodule VegaLiteTest do
       assert vl == expected_vl
     end
 
-    test "inludes partial data if the :only option is specified" do
+    test "includes partial data if the :only option is specified" do
       data = [
         %{"height" => 170, "weight" => 80, "score" => 50},
         %{"height" => 190, "weight" => 85, "score" => 55}
@@ -577,7 +577,7 @@ defmodule VegaLiteTest do
   end
 
   describe "projection/2" do
-    test "raises an error when no propperties are given" do
+    test "raises an error when no properties are given" do
       assert_raise ArgumentError,
                    "expected at least one projection property, but none was given",
                    fn ->
