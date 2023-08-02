@@ -169,18 +169,16 @@ defmodule VegaLite.Data do
     build_fields(fields, root, cols)
   end
 
-  defp used_fields(fields, nil), do: used_fields(fields)
-  defp used_fields(fields, extra_fields), do: used_fields(fields) ++ [extra_fields]
-
   defp used_fields(fields) do
-    for {_key, field} <- fields, uniq: true do
+    for {_key, field} <- fields do
       if is_list(field), do: field[:field], else: field
     end
   end
 
   defp build_options(data, fields) do
     {extra_fields, fields} = Keyword.pop(fields, :extra_fields)
-    {columns_for(data), fields, used_fields(fields, extra_fields)}
+    used_fields = Enum.uniq(used_fields(fields) ++ List.wrap(extra_fields))
+    {columns_for(data), fields, used_fields}
   end
 
   defp build_fields(fields, root, cols) do
