@@ -24,9 +24,16 @@ defmodule VegaLite.Data do
   @doc """
   Returns the specification for the a given data, a mark and a list of fields to be encoded.
 
+  Uses a subset of the used fields from the data by default.
+  More fields can be added using the `:extra_fields` option.
+
   Each argument that is not a `VegaLite` specification nor a data is accepted as the argument
   itself or a keyword list of options. All options must follow the specifications of the
-  `VegaLite` module.
+  `VegaLite` module, except `:extra_fields`.
+
+  # Specific options
+
+    * `:extra_fields` - adds extra fields to the data subset for later use
 
   ## Examples
 
@@ -36,6 +43,9 @@ defmodule VegaLite.Data do
       ]
 
       Data.chart(data, :bar, x: "category", y: "score")
+
+      Data.chart(data, :bar, x: "category", extra_fields: ["score"])
+      |> Vl.encode_field(:y, "score", type: :quantitative)
 
   The above examples achieves the same results as the example below.
 
