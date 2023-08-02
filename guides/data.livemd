@@ -122,6 +122,15 @@ Vl.new(width: 500, height: 300, title: "Fuels")
 
 As we can see, the API is flexible enough to allow it to be piped from `VegaLite`, piped to `VegaLite` or both! In principle, you are free to choose the code that best suits your needs, ideally aiming for a balance between conciseness and expressiveness.
 
+`:extra_fields` - By default, the shortened API uses a subset of the used fields from the data. You can override this if necessary, for example, if you want to pipe to an `encode_field` that uses a previously unused field.
+
+```elixir
+# We want to include "year" using the :extra_fields, so that we can use it as a color later on
+Vl.new(width: 500, height: 300, title: "Fuels")
+|> Data.chart(fuels, :point, x: "total", y: "solid_fuel", extra_fields: ["year"])
+|> Vl.encode_field(:color, "year", type: :nominal, scale: [scheme: "category10"])
+```
+
 ## Specialized plots
 
 Specialized plots provide high-level abstractions for commonly used complex charts.
