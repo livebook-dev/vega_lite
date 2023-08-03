@@ -19,7 +19,7 @@ Throughout this guide, we will look at how to use the API alone, in combination 
 
 **Limitations**: `VegaLite.Data` relies on internal type inference, and although all options may be overridden, only data that implements the `Table.Reader` protocol is supported.
 
-For meaningful examples, we will use the *fuels* dataset directly from `Explorer`
+For meaningful examples, we will use the *fuels* and *iris* datasets directly from `Explorer`.
 
 ```elixir
 alias Explorer.DataFrame, as: DF
@@ -27,6 +27,7 @@ alias VegaLite, as: Vl
 alias VegaLite.Data
 
 fuels = Explorer.Datasets.fossil_fuels()
+iris = Explorer.Datasets.iris()
 
 data = [
   %{"category" => "A", "score" => 28},
@@ -224,9 +225,9 @@ corr_to_plot = %{
 
 ```elixir
 Vl.new(title: "Correlation matrix", width: 600, height: 600)
+|> Vl.data_from_values(corr_to_plot, only: ["x", "y", "corr_val"])
 |> Vl.layers([
   Vl.new()
-  |> Vl.data_from_values(corr_to_plot)
   |> Vl.mark(:rect)
   |> Vl.encode_field(:x, "x", type: :nominal)
   |> Vl.encode_field(:y, "y", type: :nominal)
@@ -269,5 +270,42 @@ Vl.new(title: "Correlation matrix", width: 600, height: 600)
   y: "y",
   color: "corr_val",
   text: "corr_val"
+)
+```
+
+### Density heatmap
+
+In a nutshell, a density heatmap can be defined as a heatmap of binned quantitative data.
+
+It requires binned data and an aggregation function. Consequently, plotting it directly from VegaLite can be quite verbose.
+
+```elixir
+Vl.new(title: "Density heatmap", width: 400, height: 250)
+|> Vl.data_from_values(iris, only: ["sepal_length", "sepal_width"])
+|> Vl.layers([
+  Vl.new()
+  |> Vl.mark(:rect)
+  |> Vl.encode_field(:x, "sepal_length", type: :quantitative, bin: true)
+  |> Vl.encode_field(:y, "sepal_width", type: :quantitative, bin: true)
+  |> Vl.encode_field(:color, "sepal_length", type: :quantitative, aggregate: :count),
+  Vl.new()
+  |> Vl.mark(:text)
+  |> Vl.encode_field(:x, "sepal_length", type: :quantitative, bin: true)
+  |> Vl.encode_field(:y, "sepal_width", type: :quantitative, bin: true)
+  |> Vl.encode_field(:text, "sepal_length", type: :quantitative, aggregate: :count)
+])
+```
+
+Or we can use the `VegaLite.Data.density_heatmap/2` and `VegaLite.Data.density_heatmap/3` functions. They are very similar to `VegaLite.Data.heatmap/2` and `VegaLite.Data.heatmap/3`, but expect quantitative data.
+
+The default agregation functions is `:count`.
+
+```elixir
+Vl.new(title: "Density heatmap", width: 400, height: 250)
+|> Data.density_heatmap(iris,
+  x: "sepal_length",
+  y: "sepal_width",
+  color: "sepal_length",
+  text: "sepal_width"
 )
 ```
