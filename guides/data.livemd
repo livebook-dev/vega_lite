@@ -275,7 +275,7 @@ Vl.new(title: "Correlation matrix", width: 600, height: 600)
 
 ### Density heatmap
 
-In a nutshell, a density heatmap can be defined as a heatmap of binned quantitative data.
+A density heatmap can is a heatmap of binned quantitative data.
 
 It requires binned data and an aggregation function. Consequently, plotting it directly from VegaLite can be quite verbose.
 
