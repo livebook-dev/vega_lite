@@ -183,6 +183,25 @@ defmodule VegaLite.Data do
     build_heatmap_layers(vl, data, opts)
   end
 
+  def joint_plot(data, fields), do: joint_plot(Vl.new(), data, fields)
+
+  def joint_plot(vl, data, fields) do
+    for key <- [:x, :y], is_nil(fields[key]) do
+      raise ArgumentError, "the #{key} field is required to plot a jointplot"
+    end
+
+    {kind, fields} = Keyword.pop(fields, :kind, :circle)
+
+    {_cols, fields, used_fields} = build_options(data, fields)
+
+    marginals = build_marginal_jointplot(data, fields)
+    main_chart = build_main_jointplot(data, kind, fields)
+
+    build_jointplot(vl, data, used_fields, main_chart, marginals)
+  end
+
+  ## Specialized defaults
+
   defp heatmap_defaults(field, opts) when field in [:x, :y] do
     Keyword.put_new(opts, :type, :nominal)
   end
@@ -252,6 +271,39 @@ defmodule VegaLite.Data do
     vl
     |> Vl.data_from_values(data, only: used_fields)
     |> Vl.layers(layers)
+  end
+
+  defp build_jointplot(vl, data, used_fields, main_chart, {x_hist, y_hist}) do
+    vl
+    |> Vl.data_from_values(data, only: used_fields)
+    |> Vl.concat([x_hist, Vl.new() |> Vl.concat([main_chart, y_hist])], :vertical)
+  end
+
+  defp build_main_jointplot(data, :density_heatmap, fields) do
+    density_heatmap(data, fields) |> Map.update!(:spec, &Map.delete(&1, "data"))
+  end
+
+  defp build_main_jointplot(data, mark, fields) do
+    chart(data, mark, fields) |> Map.update!(:spec, &Map.delete(&1, "data"))
+  end
+
+  defp build_marginal_jointplot(data, fields) do
+    {x, y} = {fields[:x], fields[:y]}
+
+    xx = [bin: true, axis: nil]
+    xy = [aggregate: :count, title: ""]
+
+    x_hist =
+      Vl.new(height: 60)
+      |> chart(data, :bar, x: x ++ xx, y: x ++ xy)
+      |> Map.update!(:spec, &Map.delete(&1, "data"))
+
+    y_hist =
+      Vl.new(width: 60)
+      |> chart(data, :bar, x: y ++ xy, y: y ++ xx)
+      |> Map.update!(:spec, &Map.delete(&1, "data"))
+
+    {x_hist, y_hist}
   end
 
   defp used_fields(fields) do
