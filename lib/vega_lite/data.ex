@@ -183,8 +183,45 @@ defmodule VegaLite.Data do
     build_heatmap_layers(vl, data, opts)
   end
 
+  @doc """
+  Returns the specification of a joint plot with marginal histograms for a given data and a
+  list of fields to be encoded.
+
+  As a specialized chart, the jointplot expects an `:x` and `:y` and optionally a `:color` and a
+  `:text` field. All data must be `:quantitative` and the default `:kind` is `:circle`.
+
+  It also accepts the specialized `:density_heatmap` as `:kind`.
+
+  All customizations apply to the main chart only. The marginal histograms are not customizable.
+
+  ## Examples
+
+      data = [
+        %{"total_bill" => 16.99, "tip" => 1.0},
+        %{"total_bill" => 10.34, "tip" => 1.66}
+      ]
+
+      Data.joint_plot(data, x: "total_bill", y: "tip", kind: :bar)
+
+  """
+  @spec joint_plot(Table.Reader.t(), keyword()) :: VegaLite.t()
   def joint_plot(data, fields), do: joint_plot(Vl.new(), data, fields)
 
+
+  @doc """
+  Same as joint_plot/2, but takes a valid `VegaLite` specification as the first argument.
+
+  ## Examples
+
+      data = [
+        %{"total_bill" => 16.99, "tip" => 1.0},
+        %{"total_bill" => 10.34, "tip" => 1.66}
+      ]
+
+      Vl.new(title: "Joint Plot", width: 500)
+      |> Data.joint_plot(data, x: "total_bill", y: "tip", color: "total_bill")
+  """
+  @spec joint_plot(VegaLite.t(), Table.Reader.t(), keyword()) :: VegaLite.t()
   def joint_plot(vl, data, fields) do
     for key <- [:x, :y], is_nil(fields[key]) do
       raise ArgumentError, "the #{key} field is required to plot a jointplot"
