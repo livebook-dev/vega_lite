@@ -190,12 +190,14 @@ defmodule VegaLite.Data do
       raise ArgumentError, "the #{key} field is required to plot a jointplot"
     end
 
-    {kind, fields} = Keyword.pop(fields, :kind, :circle)
+    opts =
+      [width: vl.spec["width"], height: vl.spec["height"]] |> Keyword.filter(fn {_k, v} -> v end)
 
+    {kind, fields} = Keyword.pop(fields, :kind, :circle)
     {_cols, fields, used_fields} = build_options(data, fields)
 
-    marginals = build_marginal_jointplot(data, fields)
-    main_chart = build_main_jointplot(data, kind, fields)
+    marginals = build_marginal_jointplot(data, fields, opts)
+    main_chart = build_main_jointplot(data, kind, fields, opts)
 
     build_jointplot(vl, data, used_fields, main_chart, marginals)
   end
@@ -283,27 +285,37 @@ defmodule VegaLite.Data do
     )
   end
 
-  defp build_main_jointplot(data, :density_heatmap, fields) do
-    density_heatmap(data, fields) |> Map.update!(:spec, &Map.delete(&1, "data"))
+  defp build_main_jointplot(data, :density_heatmap, fields, opts) do
+    Vl.new(opts)
+    |> density_heatmap(data, fields)
+    |> Map.update!(:spec, &Map.delete(&1, "data"))
   end
 
-  defp build_main_jointplot(data, mark, fields) do
-    chart(data, mark, fields) |> Map.update!(:spec, &Map.delete(&1, "data"))
+  defp build_main_jointplot(data, mark, fields, opts) do
+    Vl.new(opts)
+    |> chart(data, mark, fields)
+    |> Map.update!(:spec, &Map.delete(&1, "data"))
   end
 
-  defp build_marginal_jointplot(data, fields) do
+  defp build_marginal_jointplot(data, fields, opts) do
     {x, y} = {fields[:x], fields[:y]}
 
     xx = [bin: true, axis: nil]
     xy = [aggregate: :count, title: ""]
 
+    x_root =
+      if opts[:width], do: Vl.new(height: 60, width: opts[:width]), else: Vl.new(height: 60)
+
+    y_root =
+      if opts[:height], do: Vl.new(width: 60, height: opts[:height]), else: Vl.new(width: 60)
+
     x_hist =
-      Vl.new(height: 60)
+      x_root
       |> chart(data, :bar, x: x ++ xx, y: x ++ xy)
       |> Map.update!(:spec, &Map.delete(&1, "data"))
 
     y_hist =
-      Vl.new(width: 60)
+      y_root
       |> chart(data, :bar, x: y ++ xy, y: y ++ xx)
       |> Map.update!(:spec, &Map.delete(&1, "data"))
 
