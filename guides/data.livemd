@@ -312,7 +312,7 @@ Vl.new(title: "Density heatmap", width: 400, height: 250)
 
 ### Jointplot
 
-A jointplot shows the relationship between two variables and the distribution of individuals of each one. Expects quantitative data.
+A jointplot shows the relationship between two variables and the distribution of individuals of each one. It expects quantitative data.
 
 ```elixir
 Vl.new(title: "Jointplot", spacing: 15, bounds: :flush)
