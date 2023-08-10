@@ -340,13 +340,9 @@ Vl.new(title: "Jointplot", spacing: 15, bounds: :flush)
 )
 ```
 
-The default `:kind` is `:circle`, which means that `VegaLite.Data.joint_plot/2` generates a scatterplot with two marginal histograms by default.
-
-We can customize it passing any `:mark` as `:kind` or the also supported `:density_heatmap`.
-
 ```elixir
 Vl.new(title: "Jointplot")
-|> Data.joint_plot(iris, x: "sepal_length", y: "sepal_width", color: "sepal_length")
+|> Data.joint_plot(iris, :circle, x: "sepal_length", y: "sepal_width", color: "sepal_length")
 ```
 
 ```elixir
@@ -389,17 +385,18 @@ Vl.new(
 )
 ```
 
-The function `VegaLite.Data.joint_plot/3` takes care of all the visual aspects, such as adjusting the size of marginal histograms and their spacing.
+The function `VegaLite.Data.joint_plot/4` takes care of all the visual aspects, such as adjusting the size of marginal histograms and their spacing.
 
 All customizations apply to the main chart only. The marginal histograms are not customizable.
 
 ```elixir
 Vl.new(title: "Jointplot with a density heatmap", width: 500, height: 350)
-|> Data.joint_plot(iris,
+|> Data.joint_plot(
+  iris,
+  :density_heatmap,
   x: "sepal_length",
   y: "sepal_width",
   color: "sepal_length",
-  text: "sepal_length",
-  kind: :density_heatmap
+  text: "sepal_length"
 )
 ```

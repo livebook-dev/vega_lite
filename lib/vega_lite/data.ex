@@ -205,9 +205,9 @@ defmodule VegaLite.Data do
   list of fields to be encoded.
 
   As a specialized chart, the jointplot expects an `:x` and `:y` and optionally a `:color` and a
-  `:text` field. All data must be `:quantitative` and the default `:kind` is `:circle`.
+  `:text` field. All data must be `:quantitative`.
 
-  It also accepts the specialized `:density_heatmap` as `:kind`.
+  Besides all marks, it supports `:density_heatmap` as a special value.
 
   All customizations apply to the main chart only. The marginal histograms are not customizable.
 
@@ -218,15 +218,15 @@ defmodule VegaLite.Data do
         %{"total_bill" => 10.34, "tip" => 1.66}
       ]
 
-      Data.joint_plot(data, x: "total_bill", y: "tip", kind: :bar)
+      Data.joint_plot(data, :bar, x: "total_bill", y: "tip")
 
   With an existing VegaLite spec:
 
       Vl.new(title: "Joint Plot", width: 500)
-      |> Data.joint_plot(data, x: "total_bill", y: "tip", color: "total_bill")
+      |> Data.joint_plot(data, :bar, x: "total_bill", y: "tip", color: "total_bill")
   """
-  @spec joint_plot(VegaLite.t(), Table.Reader.t(), keyword()) :: VegaLite.t()
-  def joint_plot(vl \\ Vl.new(), data, fields) do
+  @spec joint_plot(VegaLite.t(), Table.Reader.t(), atom() | keyword(), keyword()) :: VegaLite.t()
+  def joint_plot(vl \\ Vl.new(), data, mark, fields) do
     for key <- [:x, :y], is_nil(fields[key]) do
       raise ArgumentError, "the #{key} field is required to plot a jointplot"
     end
@@ -234,8 +234,7 @@ defmodule VegaLite.Data do
     root_opts =
       Enum.filter([width: vl.spec["width"], height: vl.spec["height"]], fn {_k, v} -> v end)
 
-    {kind, fields} = Keyword.pop(fields, :kind, :circle)
-    main_chart = build_main_jointplot(Vl.new(root_opts), data, kind, fields)
+    main_chart = build_main_jointplot(Vl.new(root_opts), data, mark, fields)
     {x_hist, y_hist} = build_marginal_jointplot(normalize_fields(fields), root_opts)
 
     vl

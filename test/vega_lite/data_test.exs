@@ -547,7 +547,7 @@ defmodule VegaLite.DataTest do
           :vertical
         )
 
-      assert vl == Data.joint_plot(@data, x: "height", y: "weight")
+      assert vl == Data.joint_plot(@data, :circle, x: "height", y: "weight")
     end
 
     test "with title" do
@@ -577,7 +577,7 @@ defmodule VegaLite.DataTest do
 
       assert vl ==
                Vl.new(title: "Jointplot")
-               |> Data.joint_plot(@data, x: "height", y: "weight")
+               |> Data.joint_plot(@data, :circle, x: "height", y: "weight")
     end
 
     test "with custom width" do
@@ -607,7 +607,7 @@ defmodule VegaLite.DataTest do
 
       assert vl ==
                Vl.new(title: "Jointplot", width: 500)
-               |> Data.joint_plot(@data, x: "height", y: "weight")
+               |> Data.joint_plot(@data, :circle, x: "height", y: "weight")
     end
 
     test "with custom height" do
@@ -637,7 +637,7 @@ defmodule VegaLite.DataTest do
 
       assert vl ==
                Vl.new(title: "Jointplot", height: 350)
-               |> Data.joint_plot(@data, x: "height", y: "weight")
+               |> Data.joint_plot(@data, :circle, x: "height", y: "weight")
     end
 
     test "with custom width and height" do
@@ -667,7 +667,7 @@ defmodule VegaLite.DataTest do
 
       assert vl ==
                Vl.new(title: "Jointplot", width: 500, height: 350)
-               |> Data.joint_plot(@data, x: "height", y: "weight")
+               |> Data.joint_plot(@data, :circle, x: "height", y: "weight")
     end
 
     test "with color" do
@@ -696,7 +696,7 @@ defmodule VegaLite.DataTest do
           :vertical
         )
 
-      assert vl == Data.joint_plot(@data, x: "height", y: "weight", color: "width")
+      assert vl == Data.joint_plot(@data, :circle, x: "height", y: "weight", color: "width")
     end
 
     test "with text" do
@@ -725,10 +725,10 @@ defmodule VegaLite.DataTest do
           :vertical
         )
 
-      assert vl == Data.joint_plot(@data, x: "height", y: "weight", text: "width")
+      assert vl == Data.joint_plot(@data, :circle, x: "height", y: "weight", text: "width")
     end
 
-    test "with mark as kind" do
+    test "mark with options" do
       vl =
         Vl.new(spacing: 15, bounds: :flush)
         |> Vl.data_from_values(@data, only: ["height", "weight"])
@@ -741,7 +741,7 @@ defmodule VegaLite.DataTest do
             Vl.new(spacing: 15, bounds: :flush)
             |> Vl.concat([
               Vl.new()
-              |> Vl.mark(:bar)
+              |> Vl.mark(:point, filled: true)
               |> Vl.encode_field(:x, "height", type: :quantitative)
               |> Vl.encode_field(:y, "weight", type: :quantitative),
               Vl.new(width: 60)
@@ -753,10 +753,10 @@ defmodule VegaLite.DataTest do
           :vertical
         )
 
-      assert vl == Data.joint_plot(@data, x: "height", y: "weight", kind: :bar)
+      assert vl == Data.joint_plot(@data, [type: :point, filled: true], x: "height", y: "weight")
     end
 
-    test "with a supported specialized as kind" do
+    test "with a supported specialized as mark" do
       vl =
         Vl.new(spacing: 15, bounds: :flush)
         |> Vl.data_from_values(@data, only: ["height", "weight"])
@@ -799,24 +799,25 @@ defmodule VegaLite.DataTest do
         )
 
       assert vl ==
-               Data.joint_plot(@data,
+               Data.joint_plot(
+                 @data,
+                 :density_heatmap,
                  x: "height",
                  y: "weight",
                  color: "height",
-                 text: "height",
-                 kind: :density_heatmap
+                 text: "height"
                )
     end
 
     test "raises an error when the x field is not given" do
       assert_raise ArgumentError, "the x field is required to plot a jointplot", fn ->
-        Data.joint_plot(@data, y: "y")
+        Data.joint_plot(@data, :point, y: "y")
       end
     end
 
     test "raises an error when the y field is not given" do
       assert_raise ArgumentError, "the y field is required to plot a jointplot", fn ->
-        Data.joint_plot(@data, x: "x", text: "text")
+        Data.joint_plot(@data, :bar, x: "x", text: "text")
       end
     end
   end
