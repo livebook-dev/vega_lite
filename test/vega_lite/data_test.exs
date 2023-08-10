@@ -525,7 +525,7 @@ defmodule VegaLite.DataTest do
   describe "jointplot" do
     test "simple jointplot" do
       vl =
-        Vl.new()
+        Vl.new(spacing: 15, bounds: :flush)
         |> Vl.data_from_values(@data, only: ["height", "weight"])
         |> Vl.concat(
           [
@@ -533,7 +533,7 @@ defmodule VegaLite.DataTest do
             |> Vl.mark(:bar)
             |> Vl.encode_field(:x, "height", type: :quantitative, bin: true, axis: nil)
             |> Vl.encode_field(:y, "height", type: :quantitative, aggregate: :count, title: ""),
-            Vl.new()
+            Vl.new(spacing: 15, bounds: :flush)
             |> Vl.concat([
               Vl.new()
               |> Vl.mark(:circle)
@@ -553,7 +553,7 @@ defmodule VegaLite.DataTest do
 
     test "with title" do
       vl =
-        Vl.new(title: "Jointplot")
+        Vl.new(title: "Jointplot", spacing: 15, bounds: :flush)
         |> Vl.data_from_values(@data, only: ["height", "weight"])
         |> Vl.concat(
           [
@@ -561,7 +561,7 @@ defmodule VegaLite.DataTest do
             |> Vl.mark(:bar)
             |> Vl.encode_field(:x, "height", type: :quantitative, bin: true, axis: nil)
             |> Vl.encode_field(:y, "height", type: :quantitative, aggregate: :count, title: ""),
-            Vl.new()
+            Vl.new(spacing: 15, bounds: :flush)
             |> Vl.concat([
               Vl.new()
               |> Vl.mark(:circle)
@@ -583,7 +583,7 @@ defmodule VegaLite.DataTest do
 
     test "with color" do
       vl =
-        Vl.new()
+        Vl.new(spacing: 15, bounds: :flush)
         |> Vl.data_from_values(@data, only: ["height", "weight", "width"])
         |> Vl.concat(
           [
@@ -591,7 +591,7 @@ defmodule VegaLite.DataTest do
             |> Vl.mark(:bar)
             |> Vl.encode_field(:x, "height", type: :quantitative, bin: true, axis: nil)
             |> Vl.encode_field(:y, "height", type: :quantitative, aggregate: :count, title: ""),
-            Vl.new()
+            Vl.new(spacing: 15, bounds: :flush)
             |> Vl.concat([
               Vl.new()
               |> Vl.mark(:circle)
@@ -612,7 +612,7 @@ defmodule VegaLite.DataTest do
 
     test "with text" do
       vl =
-        Vl.new()
+        Vl.new(spacing: 15, bounds: :flush)
         |> Vl.data_from_values(@data, only: ["height", "weight", "width"])
         |> Vl.concat(
           [
@@ -620,7 +620,7 @@ defmodule VegaLite.DataTest do
             |> Vl.mark(:bar)
             |> Vl.encode_field(:x, "height", type: :quantitative, bin: true, axis: nil)
             |> Vl.encode_field(:y, "height", type: :quantitative, aggregate: :count, title: ""),
-            Vl.new()
+            Vl.new(spacing: 15, bounds: :flush)
             |> Vl.concat([
               Vl.new()
               |> Vl.mark(:circle)
@@ -641,7 +641,7 @@ defmodule VegaLite.DataTest do
 
     test "with mark as kind" do
       vl =
-        Vl.new()
+        Vl.new(spacing: 15, bounds: :flush)
         |> Vl.data_from_values(@data, only: ["height", "weight"])
         |> Vl.concat(
           [
@@ -649,7 +649,7 @@ defmodule VegaLite.DataTest do
             |> Vl.mark(:bar)
             |> Vl.encode_field(:x, "height", type: :quantitative, bin: true, axis: nil)
             |> Vl.encode_field(:y, "height", type: :quantitative, aggregate: :count, title: ""),
-            Vl.new()
+            Vl.new(spacing: 15, bounds: :flush)
             |> Vl.concat([
               Vl.new()
               |> Vl.mark(:bar)
@@ -669,7 +669,7 @@ defmodule VegaLite.DataTest do
 
     test "with a supported specialized as kind" do
       vl =
-        Vl.new()
+        Vl.new(spacing: 15, bounds: :flush)
         |> Vl.data_from_values(@data, only: ["height", "weight"])
         |> Vl.concat(
           [
@@ -681,7 +681,7 @@ defmodule VegaLite.DataTest do
               aggregate: :count,
               title: ""
             ),
-            Vl.new()
+            Vl.new(spacing: 15, bounds: :flush)
             |> Vl.concat([
               Vl.new()
               |> Vl.layers([

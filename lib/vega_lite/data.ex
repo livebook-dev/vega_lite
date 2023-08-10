@@ -275,8 +275,12 @@ defmodule VegaLite.Data do
 
   defp build_jointplot(vl, data, used_fields, main_chart, {x_hist, y_hist}) do
     vl
+    |> Map.update!(:spec, &Map.merge(&1, %{"bounds" => "flush", "spacing" => 15}))
     |> Vl.data_from_values(data, only: used_fields)
-    |> Vl.concat([x_hist, Vl.new() |> Vl.concat([main_chart, y_hist])], :vertical)
+    |> Vl.concat(
+      [x_hist, Vl.new(spacing: 15, bounds: :flush) |> Vl.concat([main_chart, y_hist])],
+      :vertical
+    )
   end
 
   defp build_main_jointplot(data, :density_heatmap, fields) do
