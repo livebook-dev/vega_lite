@@ -7,31 +7,23 @@ defmodule VegaLite.Data do
   alone or in combination with the `VegaLite` module at any level and at any point.
 
   It relies on internal type inference, and although all options can be overridden,
-  only data that implements the [Table.Reader](https://hexdocs.pm/table/Table.Reader.html)
-  protocol is supported.
+  only data that implements the `Table.Reader` protocol is supported.
   """
 
   alias VegaLite, as: Vl
 
   @doc """
-  Returns the specification for a given data and a list of fields to be encoded.
+  Returns the specification for the a given data, a mark, and a list of
+  fields to be encoded.
 
-  See `chart/3`.
-  """
-  @spec chart(Table.Reader.t(), keyword()) :: VegaLite.t()
-  def chart(data, fields), do: chart(Vl.new(), data, fields)
+  The `mark` is either an atom, such as `:line`, or a keyword list such as
+  `[type: :point, line: true]`.
 
-  @doc """
-  Returns the specification for the a given data, a mark and a list of fields to be encoded.
+  It encodes only the given fields from the data by default. More fields can
+  be added using the `:extra_fields` option. All the other fields must follow
+  the specifications of the `VegaLite` module.
 
-  Uses a subset of the used fields from the data by default.
-  More fields can be added using the `:extra_fields` option.
-
-  Each argument that is not a `VegaLite` specification nor a data is accepted as the argument
-  itself or a keyword list of options. All options must follow the specifications of the
-  `VegaLite` module, except `:extra_fields`.
-
-  # Specific options
+  ## Options
 
     * `:extra_fields` - adds extra fields to the data subset for later use
 
@@ -54,16 +46,28 @@ defmodule VegaLite.Data do
       |> Vl.mark(:bar)
       |> Vl.encode_field(:x, "category", type: :nominal)
       |> Vl.encode_field(:y, "score", type: :quantitative)
+
+  This function may also be called with an existing VegaLite spec and
+  without a mark:
+
+      Vl.new()
+      |> Vl.mark(:bar)
+      |> Data.chart(data, x: "category", extra_fields: ["score"])
+
+  In such cases it is your responsibility to encode the mark.
   """
   @spec chart(VegaLite.t(), Table.Reader.t(), keyword()) :: VegaLite.t()
   def chart(%Vl{} = vl, data, fields) do
-    {cols, fields, used_fields} = build_options(data, fields)
-    root = vl |> Vl.data_from_values(data, only: used_fields)
-    encode_fields(fields, root, cols)
+    chart_no_data(vl, data, fields)
+    |> attach_data(data, fields)
   end
 
   @spec chart(Table.Reader.t(), atom() | keyword(), keyword()) :: VegaLite.t()
   def chart(data, mark, fields), do: chart(Vl.new(), data, mark, fields)
+
+  defp chart_no_data(vl, data, fields) do
+    encode_fields(vl, normalize_fields(fields), columns_for(data))
+  end
 
   @doc """
   Same as chart/3 but receives a valid `VegaLite` specification as a first argument.
@@ -92,9 +96,14 @@ defmodule VegaLite.Data do
   """
   @spec chart(VegaLite.t(), Table.Reader.t(), atom() | keyword(), keyword()) :: VegaLite.t()
   def chart(vl, data, mark, fields) do
-    {cols, fields, used_fields} = build_options(data, fields)
-    root = vl |> Vl.data_from_values(data, only: used_fields) |> encode_mark(mark)
-    encode_fields(fields, root, cols)
+    chart_no_data(vl, data, mark, fields)
+    |> attach_data(data, fields)
+  end
+
+  defp chart_no_data(vl, data, mark, fields) do
+    vl
+    |> encode_mark(mark)
+    |> encode_fields(normalize_fields(fields), columns_for(data))
   end
 
   @doc """
@@ -113,32 +122,42 @@ defmodule VegaLite.Data do
 
       Data.heatmap(data, x: "category", y: "score", color: "score", text: "category")
 
-  """
-  @spec heatmap(Table.Reader.t(), keyword()) :: VegaLite.t()
-  def heatmap(data, fields), do: heatmap(Vl.new(), data, fields)
-
-  @doc """
-  Same as heatmap/2, but takes a valid `VegaLite` specification as the first argument.
-
-  ## Examples
-
-      data = [
-        %{"category" => "A", "score" => 28},
-        %{"category" => "B", "score" => 55}
-      ]
+  With an existing VegaLite spec:
 
       Vl.new(title: "Heatmap", width: 500)
       |> Data.heatmap(data, x: "category", y: "score", color: "score", text: "category")
   """
   @spec heatmap(VegaLite.t(), Table.Reader.t(), keyword()) :: VegaLite.t()
-  def heatmap(vl, data, fields) do
+  def heatmap(vl \\ Vl.new(), data, fields) do
     for key <- [:x, :y], is_nil(fields[key]) do
       raise ArgumentError, "the #{key} field is required to plot a heatmap"
     end
 
-    opts = build_options(data, fields, &heatmap_defaults/2)
-    build_heatmap_layers(vl, data, opts)
+    heatmap_no_data(vl, data, fields, &heatmap_defaults/2)
+    |> attach_data(data, fields)
   end
+
+  defp heatmap_no_data(vl, data, fields, fun) do
+    cols = columns_for(data)
+    fields = normalize_fields(fields, fun)
+    text_fields = Keyword.take(fields, [:text, :x, :y])
+    rect_fields = Keyword.delete(fields, :text)
+
+    text_layer = if fields[:text], do: [encode_layer(cols, :text, text_fields)], else: []
+    rect_layer = [encode_layer(cols, :rect, rect_fields)]
+
+    Vl.layers(vl, rect_layer ++ text_layer)
+  end
+
+  defp heatmap_defaults(field, opts) when field in [:x, :y] do
+    Keyword.put_new(opts, :type, :nominal)
+  end
+
+  defp heatmap_defaults(field, opts) when field in [:color, :text] do
+    Keyword.put_new(opts, :type, :quantitative)
+  end
+
+  defp heatmap_defaults(_field, opts), do: opts
 
   @doc """
   Returns the specification of a density heat map for a given data and a list of fields to be encoded.
@@ -156,32 +175,30 @@ defmodule VegaLite.Data do
 
       Data.density_heatmap(data, x: "total_bill", y: "tip", color: "total_bill", text: "tip")
 
-  """
-  @spec density_heatmap(Table.Reader.t(), keyword()) :: VegaLite.t()
-  def density_heatmap(data, fields), do: density_heatmap(Vl.new(), data, fields)
-
-  @doc """
-  Same as density_heatmap/2, but takes a valid `VegaLite` specification as the first argument.
-
-  ## Examples
-
-      data = [
-        %{"total_bill" => 16.99, "tip" => 1.0},
-        %{"total_bill" => 10.34, "tip" => 1.66}
-      ]
+  With an existing VegaLite spec:
 
       Vl.new(title: "Density Heatmap", width: 500)
       |> Data.heatmap(data, x: "total_bill", y: "tip", color: "total_bill", text: "tip")
   """
   @spec density_heatmap(VegaLite.t(), Table.Reader.t(), keyword()) :: VegaLite.t()
-  def density_heatmap(vl, data, fields) do
+  def density_heatmap(vl \\ Vl.new(), data, fields) do
     for key <- [:x, :y, :color], is_nil(fields[key]) do
       raise ArgumentError, "the #{key} field is required to plot a density heatmap"
     end
 
-    opts = build_options(data, fields, &density_heatmap_defaults/2)
-    build_heatmap_layers(vl, data, opts)
+    heatmap_no_data(vl, data, fields, &density_heatmap_defaults/2)
+    |> attach_data(data, fields)
   end
+
+  defp density_heatmap_defaults(field, opts) when field in [:x, :y] do
+    opts |> Keyword.put_new(:type, :quantitative) |> Keyword.put_new(:bin, true)
+  end
+
+  defp density_heatmap_defaults(field, opts) when field in [:color, :text] do
+    opts |> Keyword.put_new(:type, :quantitative) |> Keyword.put_new(:aggregate, :count)
+  end
+
+  defp density_heatmap_defaults(_field, opts), do: opts
 
   @doc """
   Returns the specification of a joint plot with marginal histograms for a given data and a
@@ -203,25 +220,13 @@ defmodule VegaLite.Data do
 
       Data.joint_plot(data, x: "total_bill", y: "tip", kind: :bar)
 
-  """
-  @spec joint_plot(Table.Reader.t(), keyword()) :: VegaLite.t()
-  def joint_plot(data, fields), do: joint_plot(Vl.new(), data, fields)
-
-  @doc """
-  Same as joint_plot/2, but takes a valid `VegaLite` specification as the first argument.
-
-  ## Examples
-
-      data = [
-        %{"total_bill" => 16.99, "tip" => 1.0},
-        %{"total_bill" => 10.34, "tip" => 1.66}
-      ]
+  With an existing VegaLite spec:
 
       Vl.new(title: "Joint Plot", width: 500)
       |> Data.joint_plot(data, x: "total_bill", y: "tip", color: "total_bill")
   """
   @spec joint_plot(VegaLite.t(), Table.Reader.t(), keyword()) :: VegaLite.t()
-  def joint_plot(vl, data, fields) do
+  def joint_plot(vl \\ Vl.new(), data, fields) do
     for key <- [:x, :y], is_nil(fields[key]) do
       raise ArgumentError, "the #{key} field is required to plot a jointplot"
     end
@@ -230,72 +235,24 @@ defmodule VegaLite.Data do
       Enum.filter([width: vl.spec["width"], height: vl.spec["height"]], fn {_k, v} -> v end)
 
     {kind, fields} = Keyword.pop(fields, :kind, :circle)
-    {fields, used_fields} = build_base_options(fields)
-
-    marginals = build_marginal_jointplot(fields, root_opts)
-    main_chart = build_main_jointplot(data, kind, fields, root_opts)
-
-    build_jointplot(vl, data, used_fields, main_chart, marginals)
-  end
-
-  ## Specialized - defaults
-
-  defp heatmap_defaults(field, opts) when field in [:x, :y] do
-    Keyword.put_new(opts, :type, :nominal)
-  end
-
-  defp heatmap_defaults(field, opts) when field in [:color, :text] do
-    Keyword.put_new(opts, :type, :quantitative)
-  end
-
-  defp heatmap_defaults(_field, opts), do: opts
-
-  defp density_heatmap_defaults(field, opts) when field in [:x, :y] do
-    opts |> Keyword.put_new(:type, :quantitative) |> Keyword.put_new(:bin, true)
-  end
-
-  defp density_heatmap_defaults(field, opts) when field in [:color, :text] do
-    opts |> Keyword.put_new(:type, :quantitative) |> Keyword.put_new(:aggregate, :count)
-  end
-
-  defp density_heatmap_defaults(_field, opts), do: opts
-
-  ### Specialized - builders
-
-  defp build_heatmap_layers(vl, data, {cols, fields, used_fields}) do
-    text_fields = Keyword.take(fields, [:text, :x, :y])
-    rect_fields = Keyword.delete(fields, :text)
-
-    text_layer = if fields[:text], do: [encode_layer(cols, :text, text_fields)], else: []
-    rect_layer = [encode_layer(cols, :rect, rect_fields)]
+    main_chart = build_main_jointplot(Vl.new(root_opts), data, kind, fields)
+    {x_hist, y_hist} = build_marginal_jointplot(normalize_fields(fields), root_opts)
 
     vl
-    |> Vl.data_from_values(data, only: used_fields)
-    |> Vl.layers(rect_layer ++ text_layer)
-  end
-
-  defp build_jointplot(vl, data, used_fields, main_chart, {x_hist, y_hist}) do
-    root_visuals = %{"bounds" => "flush", "spacing" => 15}
-
-    vl
-    |> Map.update!(:spec, &Map.merge(&1, root_visuals))
-    |> Vl.data_from_values(data, only: used_fields)
+    |> Map.update!(:spec, &Map.merge(&1, %{"bounds" => "flush", "spacing" => 15}))
+    |> attach_data(data, fields)
     |> Vl.concat(
       [x_hist, Vl.new(spacing: 15, bounds: :flush) |> Vl.concat([main_chart, y_hist])],
       :vertical
     )
   end
 
-  defp build_main_jointplot(data, :density_heatmap, fields, opts) do
-    Vl.new(opts)
-    |> density_heatmap(data, fields)
-    |> Map.update!(:spec, &Map.delete(&1, "data"))
+  defp build_main_jointplot(vl, data, :density_heatmap, fields) do
+    heatmap_no_data(vl, data, fields, &density_heatmap_defaults/2)
   end
 
-  defp build_main_jointplot(data, mark, fields, opts) do
-    Vl.new(opts)
-    |> chart(data, mark, fields)
-    |> Map.update!(:spec, &Map.delete(&1, "data"))
+  defp build_main_jointplot(vl, data, mark, fields) do
+    chart_no_data(vl, data, mark, fields)
   end
 
   defp build_marginal_jointplot(fields, opts) do
@@ -334,41 +291,33 @@ defmodule VegaLite.Data do
 
   defp encode_mark(vl, mark) when is_atom(mark), do: Vl.mark(vl, mark)
 
-  defp encode_fields(fields, root, cols) do
-    Enum.reduce(fields, root, fn {field, opts}, acc -> encode_field(acc, cols, field, opts) end)
-  end
-
-  defp encode_field(schema, cols, field, opts) do
-    {col, opts} = Keyword.pop!(opts, :field)
-    opts = Keyword.put_new_lazy(opts, :type, fn -> cols[col] end)
-    Vl.encode_field(schema, field, col, opts)
+  defp encode_fields(vl, fields, cols) do
+    Enum.reduce(fields, vl, fn {field, opts}, acc ->
+      {col, opts} = Keyword.pop!(opts, :field)
+      opts = Keyword.put_new_lazy(opts, :type, fn -> cols[col] end)
+      Vl.encode_field(acc, field, col, opts)
+    end)
   end
 
   defp encode_layer(cols, mark, fields) do
-    root = Vl.new() |> encode_mark(mark)
-    encode_fields(fields, root, cols)
+    Vl.new() |> encode_mark(mark) |> encode_fields(fields, cols)
   end
 
-  defp build_options(data, fields, fun \\ fn _field, opts -> opts end) do
-    {fields, used_fields} = build_base_options(fields, fun)
-    {columns_for(data), fields, used_fields}
+  defp attach_data(vl, data, fields) do
+    used_fields =
+      fields
+      |> Enum.flat_map(fn
+        {:extra_fields, fields} -> List.wrap(fields)
+        {_, field} when is_list(field) -> [field[:field]]
+        {_, field} -> [field]
+      end)
+      |> Enum.uniq()
+
+    Vl.data_from_values(vl, data, only: used_fields)
   end
 
-  # Avoiding unnecessary calls to columns_for
-  defp build_base_options(fields, fun \\ fn _field, opts -> opts end) do
-    {extra_fields, fields} = Keyword.pop(fields, :extra_fields)
-    used_fields = Enum.uniq(used_fields(fields) ++ List.wrap(extra_fields))
-    {standardize_fields(fields, fun), used_fields}
-  end
-
-  defp used_fields(fields) do
-    for {_key, field} <- fields do
-      if is_list(field), do: field[:field], else: field
-    end
-  end
-
-  defp standardize_fields(fields, fun) do
-    for {field, opts} <- fields do
+  defp normalize_fields(fields, fun \\ fn _field, opts -> opts end) do
+    for {field, opts} <- fields, field != :extra_fields do
       opts = if is_list(opts), do: fun.(field, opts), else: fun.(field, field: opts)
       {field, opts}
     end
