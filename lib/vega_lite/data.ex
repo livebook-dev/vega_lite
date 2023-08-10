@@ -183,6 +183,63 @@ defmodule VegaLite.Data do
     build_heatmap_layers(vl, data, opts)
   end
 
+  @doc """
+  Returns the specification of a joint plot with marginal histograms for a given data and a
+  list of fields to be encoded.
+
+  As a specialized chart, the jointplot expects an `:x` and `:y` and optionally a `:color` and a
+  `:text` field. All data must be `:quantitative` and the default `:kind` is `:circle`.
+
+  It also accepts the specialized `:density_heatmap` as `:kind`.
+
+  All customizations apply to the main chart only. The marginal histograms are not customizable.
+
+  ## Examples
+
+      data = [
+        %{"total_bill" => 16.99, "tip" => 1.0},
+        %{"total_bill" => 10.34, "tip" => 1.66}
+      ]
+
+      Data.joint_plot(data, x: "total_bill", y: "tip", kind: :bar)
+
+  """
+  @spec joint_plot(Table.Reader.t(), keyword()) :: VegaLite.t()
+  def joint_plot(data, fields), do: joint_plot(Vl.new(), data, fields)
+
+  @doc """
+  Same as joint_plot/2, but takes a valid `VegaLite` specification as the first argument.
+
+  ## Examples
+
+      data = [
+        %{"total_bill" => 16.99, "tip" => 1.0},
+        %{"total_bill" => 10.34, "tip" => 1.66}
+      ]
+
+      Vl.new(title: "Joint Plot", width: 500)
+      |> Data.joint_plot(data, x: "total_bill", y: "tip", color: "total_bill")
+  """
+  @spec joint_plot(VegaLite.t(), Table.Reader.t(), keyword()) :: VegaLite.t()
+  def joint_plot(vl, data, fields) do
+    for key <- [:x, :y], is_nil(fields[key]) do
+      raise ArgumentError, "the #{key} field is required to plot a jointplot"
+    end
+
+    root_opts =
+      Enum.filter([width: vl.spec["width"], height: vl.spec["height"]], fn {_k, v} -> v end)
+
+    {kind, fields} = Keyword.pop(fields, :kind, :circle)
+    {fields, used_fields} = build_base_options(fields)
+
+    marginals = build_marginal_jointplot(fields, root_opts)
+    main_chart = build_main_jointplot(data, kind, fields, root_opts)
+
+    build_jointplot(vl, data, used_fields, main_chart, marginals)
+  end
+
+  ## Specialized - defaults
+
   defp heatmap_defaults(field, opts) when field in [:x, :y] do
     Keyword.put_new(opts, :type, :nominal)
   end
@@ -191,9 +248,7 @@ defmodule VegaLite.Data do
     Keyword.put_new(opts, :type, :quantitative)
   end
 
-  defp heatmap_defaults(_field, opts) do
-    opts
-  end
+  defp heatmap_defaults(_field, opts), do: opts
 
   defp density_heatmap_defaults(field, opts) when field in [:x, :y] do
     opts |> Keyword.put_new(:type, :quantitative) |> Keyword.put_new(:bin, true)
@@ -203,8 +258,71 @@ defmodule VegaLite.Data do
     opts |> Keyword.put_new(:type, :quantitative) |> Keyword.put_new(:aggregate, :count)
   end
 
-  defp density_heatmap_defaults(_field, opts) do
-    opts
+  defp density_heatmap_defaults(_field, opts), do: opts
+
+  ### Specialized - builders
+
+  defp build_heatmap_layers(vl, data, {cols, fields, used_fields}) do
+    text_fields = Keyword.take(fields, [:text, :x, :y])
+    rect_fields = Keyword.delete(fields, :text)
+
+    text_layer = if fields[:text], do: [encode_layer(cols, :text, text_fields)], else: []
+    rect_layer = [encode_layer(cols, :rect, rect_fields)]
+
+    vl
+    |> Vl.data_from_values(data, only: used_fields)
+    |> Vl.layers(rect_layer ++ text_layer)
+  end
+
+  defp build_jointplot(vl, data, used_fields, main_chart, {x_hist, y_hist}) do
+    root_visuals = %{"bounds" => "flush", "spacing" => 15}
+
+    vl
+    |> Map.update!(:spec, &Map.merge(&1, root_visuals))
+    |> Vl.data_from_values(data, only: used_fields)
+    |> Vl.concat(
+      [x_hist, Vl.new(spacing: 15, bounds: :flush) |> Vl.concat([main_chart, y_hist])],
+      :vertical
+    )
+  end
+
+  defp build_main_jointplot(data, :density_heatmap, fields, opts) do
+    Vl.new(opts)
+    |> density_heatmap(data, fields)
+    |> Map.update!(:spec, &Map.delete(&1, "data"))
+  end
+
+  defp build_main_jointplot(data, mark, fields, opts) do
+    Vl.new(opts)
+    |> chart(data, mark, fields)
+    |> Map.update!(:spec, &Map.delete(&1, "data"))
+  end
+
+  defp build_marginal_jointplot(fields, opts) do
+    {x, y} = {fields[:x][:field], fields[:y][:field]}
+
+    xx = [type: :quantitative, bin: true, axis: nil]
+    xy = [type: :quantitative, aggregate: :count, title: ""]
+
+    x_root =
+      if opts[:width], do: Vl.new(height: 60, width: opts[:width]), else: Vl.new(height: 60)
+
+    y_root =
+      if opts[:height], do: Vl.new(width: 60, height: opts[:height]), else: Vl.new(width: 60)
+
+    x_hist =
+      x_root
+      |> Vl.mark(:bar)
+      |> Vl.encode_field(:x, x, xx)
+      |> Vl.encode_field(:y, x, xy)
+
+    y_hist =
+      y_root
+      |> Vl.mark(:bar)
+      |> Vl.encode_field(:x, y, xy)
+      |> Vl.encode_field(:y, y, xx)
+
+    {x_hist, y_hist}
   end
 
   ## Shared helpers
@@ -232,26 +350,15 @@ defmodule VegaLite.Data do
   end
 
   defp build_options(data, fields, fun \\ fn _field, opts -> opts end) do
-    {extra_fields, fields} = Keyword.pop(fields, :extra_fields)
-    used_fields = Enum.uniq(used_fields(fields) ++ List.wrap(extra_fields))
-    {columns_for(data), standardize_fields(fields, fun), used_fields}
+    {fields, used_fields} = build_base_options(fields, fun)
+    {columns_for(data), fields, used_fields}
   end
 
-  defp build_heatmap_layers(vl, data, {cols, fields, used_fields}) do
-    text_fields = Keyword.take(fields, [:text, :x, :y])
-    rect_fields = Keyword.delete(fields, :text)
-
-    layers =
-      [encode_layer(cols, :rect, rect_fields)] ++
-        if fields[:text] do
-          [encode_layer(cols, :text, text_fields)]
-        else
-          []
-        end
-
-    vl
-    |> Vl.data_from_values(data, only: used_fields)
-    |> Vl.layers(layers)
+  # Avoiding unnecessary calls to columns_for
+  defp build_base_options(fields, fun \\ fn _field, opts -> opts end) do
+    {extra_fields, fields} = Keyword.pop(fields, :extra_fields)
+    used_fields = Enum.uniq(used_fields(fields) ++ List.wrap(extra_fields))
+    {standardize_fields(fields, fun), used_fields}
   end
 
   defp used_fields(fields) do

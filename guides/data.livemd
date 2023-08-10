@@ -309,3 +309,97 @@ Vl.new(title: "Density heatmap", width: 400, height: 250)
   text: "sepal_width"
 )
 ```
+
+### Jointplot
+
+A jointplot shows the relationship between two variables and the distribution of individuals of each one. It expects quantitative data.
+
+```elixir
+Vl.new(title: "Jointplot", spacing: 15, bounds: :flush)
+|> Vl.data_from_values(iris, only: ["sepal_length", "sepal_width"])
+|> Vl.concat(
+  [
+    Vl.new(height: 60)
+    |> Vl.mark(:bar)
+    |> Vl.encode_field(:x, "sepal_length", type: :quantitative, bin: true, axis: nil)
+    |> Vl.encode_field(:y, "sepal_length", type: :quantitative, aggregate: :count, title: ""),
+    Vl.new(spacing: 15, bounds: :flush)
+    |> Vl.concat([
+      Vl.new()
+      |> Vl.mark(:circle)
+      |> Vl.encode_field(:x, "sepal_length", type: :quantitative)
+      |> Vl.encode_field(:y, "sepal_width", type: :quantitative)
+      |> Vl.encode_field(:color, "sepal_length", type: :quantitative),
+      Vl.new(width: 60)
+      |> Vl.mark(:bar)
+      |> Vl.encode_field(:y, "sepal_width", type: :quantitative, bin: true, axis: nil)
+      |> Vl.encode_field(:x, "sepal_width", type: :quantitative, aggregate: :count, title: "")
+    ])
+  ],
+  :vertical
+)
+```
+
+The default `:kind` is `:circle`, which means that `VegaLite.Data.joint_plot/2` generates a scatterplot with two marginal histograms by default.
+
+We can customize it passing any `:mark` as `:kind` or the also supported `:density_heatmap`.
+
+```elixir
+Vl.new(title: "Jointplot")
+|> Data.joint_plot(iris, x: "sepal_length", y: "sepal_width", color: "sepal_length")
+```
+
+```elixir
+Vl.new(
+  title: "Jointplot with a density heatmap",
+  width: 500,
+  height: 350,
+  spacing: 15,
+  bounds: :flush
+)
+|> Vl.data_from_values(iris, only: ["sepal_length", "sepal_width"])
+|> Vl.concat(
+  [
+    Vl.new(height: 60, width: 500)
+    |> Vl.mark(:bar)
+    |> Vl.encode_field(:x, "sepal_length", type: :quantitative, bin: true, axis: nil)
+    |> Vl.encode_field(:y, "sepal_length", type: :quantitative, aggregate: :count, title: ""),
+    Vl.new(spacing: 15, bounds: :flush)
+    |> Vl.concat([
+      Vl.new(width: 500, height: 350)
+      |> Vl.layers([
+        Vl.new()
+        |> Vl.mark(:rect)
+        |> Vl.encode_field(:x, "sepal_length", type: :quantitative, bin: true)
+        |> Vl.encode_field(:y, "sepal_width", type: :quantitative, bin: true)
+        |> Vl.encode_field(:color, "sepal_length", type: :quantitative, aggregate: :count),
+        Vl.new()
+        |> Vl.mark(:text)
+        |> Vl.encode_field(:x, "sepal_length", type: :quantitative, bin: true)
+        |> Vl.encode_field(:y, "sepal_width", type: :quantitative, bin: true)
+        |> Vl.encode_field(:text, "sepal_length", type: :quantitative, aggregate: :count)
+      ]),
+      Vl.new(width: 60, height: 350)
+      |> Vl.mark(:bar)
+      |> Vl.encode_field(:y, "sepal_width", type: :quantitative, bin: true, axis: nil)
+      |> Vl.encode_field(:x, "sepal_width", type: :quantitative, aggregate: :count, title: "")
+    ])
+  ],
+  :vertical
+)
+```
+
+The function `VegaLite.Data.joint_plot/3` takes care of all the visual aspects, such as adjusting the size of marginal histograms and their spacing.
+
+All customizations apply to the main chart only. The marginal histograms are not customizable.
+
+```elixir
+Vl.new(title: "Jointplot with a density heatmap", width: 500, height: 350)
+|> Data.joint_plot(iris,
+  x: "sepal_length",
+  y: "sepal_width",
+  color: "sepal_length",
+  text: "sepal_length",
+  kind: :density_heatmap
+)
+```

@@ -521,4 +521,304 @@ defmodule VegaLite.DataTest do
       end
     end
   end
+
+  describe "jointplot" do
+    test "simple jointplot" do
+      vl =
+        Vl.new(spacing: 15, bounds: :flush)
+        |> Vl.data_from_values(@data, only: ["height", "weight"])
+        |> Vl.concat(
+          [
+            Vl.new(height: 60)
+            |> Vl.mark(:bar)
+            |> Vl.encode_field(:x, "height", type: :quantitative, bin: true, axis: nil)
+            |> Vl.encode_field(:y, "height", type: :quantitative, aggregate: :count, title: ""),
+            Vl.new(spacing: 15, bounds: :flush)
+            |> Vl.concat([
+              Vl.new()
+              |> Vl.mark(:circle)
+              |> Vl.encode_field(:x, "height", type: :quantitative)
+              |> Vl.encode_field(:y, "weight", type: :quantitative),
+              Vl.new(width: 60)
+              |> Vl.mark(:bar)
+              |> Vl.encode_field(:y, "weight", type: :quantitative, bin: true, axis: nil)
+              |> Vl.encode_field(:x, "weight", type: :quantitative, aggregate: :count, title: "")
+            ])
+          ],
+          :vertical
+        )
+
+      assert vl == Data.joint_plot(@data, x: "height", y: "weight")
+    end
+
+    test "with title" do
+      vl =
+        Vl.new(title: "Jointplot", spacing: 15, bounds: :flush)
+        |> Vl.data_from_values(@data, only: ["height", "weight"])
+        |> Vl.concat(
+          [
+            Vl.new(height: 60)
+            |> Vl.mark(:bar)
+            |> Vl.encode_field(:x, "height", type: :quantitative, bin: true, axis: nil)
+            |> Vl.encode_field(:y, "height", type: :quantitative, aggregate: :count, title: ""),
+            Vl.new(spacing: 15, bounds: :flush)
+            |> Vl.concat([
+              Vl.new()
+              |> Vl.mark(:circle)
+              |> Vl.encode_field(:x, "height", type: :quantitative)
+              |> Vl.encode_field(:y, "weight", type: :quantitative),
+              Vl.new(width: 60)
+              |> Vl.mark(:bar)
+              |> Vl.encode_field(:y, "weight", type: :quantitative, bin: true, axis: nil)
+              |> Vl.encode_field(:x, "weight", type: :quantitative, aggregate: :count, title: "")
+            ])
+          ],
+          :vertical
+        )
+
+      assert vl ==
+               Vl.new(title: "Jointplot")
+               |> Data.joint_plot(@data, x: "height", y: "weight")
+    end
+
+    test "with custom width" do
+      vl =
+        Vl.new(title: "Jointplot", width: 500, spacing: 15, bounds: :flush)
+        |> Vl.data_from_values(@data, only: ["height", "weight"])
+        |> Vl.concat(
+          [
+            Vl.new(height: 60, width: 500)
+            |> Vl.mark(:bar)
+            |> Vl.encode_field(:x, "height", type: :quantitative, bin: true, axis: nil)
+            |> Vl.encode_field(:y, "height", type: :quantitative, aggregate: :count, title: ""),
+            Vl.new(spacing: 15, bounds: :flush)
+            |> Vl.concat([
+              Vl.new(width: 500)
+              |> Vl.mark(:circle)
+              |> Vl.encode_field(:x, "height", type: :quantitative)
+              |> Vl.encode_field(:y, "weight", type: :quantitative),
+              Vl.new(width: 60)
+              |> Vl.mark(:bar)
+              |> Vl.encode_field(:y, "weight", type: :quantitative, bin: true, axis: nil)
+              |> Vl.encode_field(:x, "weight", type: :quantitative, aggregate: :count, title: "")
+            ])
+          ],
+          :vertical
+        )
+
+      assert vl ==
+               Vl.new(title: "Jointplot", width: 500)
+               |> Data.joint_plot(@data, x: "height", y: "weight")
+    end
+
+    test "with custom height" do
+      vl =
+        Vl.new(title: "Jointplot", height: 350, spacing: 15, bounds: :flush)
+        |> Vl.data_from_values(@data, only: ["height", "weight"])
+        |> Vl.concat(
+          [
+            Vl.new(height: 60)
+            |> Vl.mark(:bar)
+            |> Vl.encode_field(:x, "height", type: :quantitative, bin: true, axis: nil)
+            |> Vl.encode_field(:y, "height", type: :quantitative, aggregate: :count, title: ""),
+            Vl.new(spacing: 15, bounds: :flush)
+            |> Vl.concat([
+              Vl.new(height: 350)
+              |> Vl.mark(:circle)
+              |> Vl.encode_field(:x, "height", type: :quantitative)
+              |> Vl.encode_field(:y, "weight", type: :quantitative),
+              Vl.new(width: 60, height: 350)
+              |> Vl.mark(:bar)
+              |> Vl.encode_field(:y, "weight", type: :quantitative, bin: true, axis: nil)
+              |> Vl.encode_field(:x, "weight", type: :quantitative, aggregate: :count, title: "")
+            ])
+          ],
+          :vertical
+        )
+
+      assert vl ==
+               Vl.new(title: "Jointplot", height: 350)
+               |> Data.joint_plot(@data, x: "height", y: "weight")
+    end
+
+    test "with custom width and height" do
+      vl =
+        Vl.new(title: "Jointplot", width: 500, height: 350, spacing: 15, bounds: :flush)
+        |> Vl.data_from_values(@data, only: ["height", "weight"])
+        |> Vl.concat(
+          [
+            Vl.new(height: 60, width: 500)
+            |> Vl.mark(:bar)
+            |> Vl.encode_field(:x, "height", type: :quantitative, bin: true, axis: nil)
+            |> Vl.encode_field(:y, "height", type: :quantitative, aggregate: :count, title: ""),
+            Vl.new(spacing: 15, bounds: :flush)
+            |> Vl.concat([
+              Vl.new(width: 500, height: 350)
+              |> Vl.mark(:circle)
+              |> Vl.encode_field(:x, "height", type: :quantitative)
+              |> Vl.encode_field(:y, "weight", type: :quantitative),
+              Vl.new(width: 60, height: 350)
+              |> Vl.mark(:bar)
+              |> Vl.encode_field(:y, "weight", type: :quantitative, bin: true, axis: nil)
+              |> Vl.encode_field(:x, "weight", type: :quantitative, aggregate: :count, title: "")
+            ])
+          ],
+          :vertical
+        )
+
+      assert vl ==
+               Vl.new(title: "Jointplot", width: 500, height: 350)
+               |> Data.joint_plot(@data, x: "height", y: "weight")
+    end
+
+    test "with color" do
+      vl =
+        Vl.new(spacing: 15, bounds: :flush)
+        |> Vl.data_from_values(@data, only: ["height", "weight", "width"])
+        |> Vl.concat(
+          [
+            Vl.new(height: 60)
+            |> Vl.mark(:bar)
+            |> Vl.encode_field(:x, "height", type: :quantitative, bin: true, axis: nil)
+            |> Vl.encode_field(:y, "height", type: :quantitative, aggregate: :count, title: ""),
+            Vl.new(spacing: 15, bounds: :flush)
+            |> Vl.concat([
+              Vl.new()
+              |> Vl.mark(:circle)
+              |> Vl.encode_field(:x, "height", type: :quantitative)
+              |> Vl.encode_field(:y, "weight", type: :quantitative)
+              |> Vl.encode_field(:color, "width", type: :quantitative),
+              Vl.new(width: 60)
+              |> Vl.mark(:bar)
+              |> Vl.encode_field(:y, "weight", type: :quantitative, bin: true, axis: nil)
+              |> Vl.encode_field(:x, "weight", type: :quantitative, aggregate: :count, title: "")
+            ])
+          ],
+          :vertical
+        )
+
+      assert vl == Data.joint_plot(@data, x: "height", y: "weight", color: "width")
+    end
+
+    test "with text" do
+      vl =
+        Vl.new(spacing: 15, bounds: :flush)
+        |> Vl.data_from_values(@data, only: ["height", "weight", "width"])
+        |> Vl.concat(
+          [
+            Vl.new(height: 60)
+            |> Vl.mark(:bar)
+            |> Vl.encode_field(:x, "height", type: :quantitative, bin: true, axis: nil)
+            |> Vl.encode_field(:y, "height", type: :quantitative, aggregate: :count, title: ""),
+            Vl.new(spacing: 15, bounds: :flush)
+            |> Vl.concat([
+              Vl.new()
+              |> Vl.mark(:circle)
+              |> Vl.encode_field(:x, "height", type: :quantitative)
+              |> Vl.encode_field(:y, "weight", type: :quantitative)
+              |> Vl.encode_field(:text, "width", type: :quantitative),
+              Vl.new(width: 60)
+              |> Vl.mark(:bar)
+              |> Vl.encode_field(:y, "weight", type: :quantitative, bin: true, axis: nil)
+              |> Vl.encode_field(:x, "weight", type: :quantitative, aggregate: :count, title: "")
+            ])
+          ],
+          :vertical
+        )
+
+      assert vl == Data.joint_plot(@data, x: "height", y: "weight", text: "width")
+    end
+
+    test "with mark as kind" do
+      vl =
+        Vl.new(spacing: 15, bounds: :flush)
+        |> Vl.data_from_values(@data, only: ["height", "weight"])
+        |> Vl.concat(
+          [
+            Vl.new(height: 60)
+            |> Vl.mark(:bar)
+            |> Vl.encode_field(:x, "height", type: :quantitative, bin: true, axis: nil)
+            |> Vl.encode_field(:y, "height", type: :quantitative, aggregate: :count, title: ""),
+            Vl.new(spacing: 15, bounds: :flush)
+            |> Vl.concat([
+              Vl.new()
+              |> Vl.mark(:bar)
+              |> Vl.encode_field(:x, "height", type: :quantitative)
+              |> Vl.encode_field(:y, "weight", type: :quantitative),
+              Vl.new(width: 60)
+              |> Vl.mark(:bar)
+              |> Vl.encode_field(:y, "weight", type: :quantitative, bin: true, axis: nil)
+              |> Vl.encode_field(:x, "weight", type: :quantitative, aggregate: :count, title: "")
+            ])
+          ],
+          :vertical
+        )
+
+      assert vl == Data.joint_plot(@data, x: "height", y: "weight", kind: :bar)
+    end
+
+    test "with a supported specialized as kind" do
+      vl =
+        Vl.new(spacing: 15, bounds: :flush)
+        |> Vl.data_from_values(@data, only: ["height", "weight"])
+        |> Vl.concat(
+          [
+            Vl.new(height: 60)
+            |> Vl.mark(:bar)
+            |> Vl.encode_field(:x, "height", type: :quantitative, bin: true, axis: nil)
+            |> Vl.encode_field(:y, "height",
+              type: :quantitative,
+              aggregate: :count,
+              title: ""
+            ),
+            Vl.new(spacing: 15, bounds: :flush)
+            |> Vl.concat([
+              Vl.new()
+              |> Vl.layers([
+                Vl.new()
+                |> Vl.mark(:rect)
+                |> Vl.encode_field(:x, "height", type: :quantitative, bin: true)
+                |> Vl.encode_field(:y, "weight", type: :quantitative, bin: true)
+                |> Vl.encode_field(:color, "height", type: :quantitative, aggregate: :count),
+                Vl.new()
+                |> Vl.mark(:text)
+                |> Vl.encode_field(:x, "height", type: :quantitative, bin: true)
+                |> Vl.encode_field(:y, "weight", type: :quantitative, bin: true)
+                |> Vl.encode_field(:text, "height", type: :quantitative, aggregate: :count)
+              ]),
+              Vl.new(width: 60)
+              |> Vl.mark(:bar)
+              |> Vl.encode_field(:y, "weight", type: :quantitative, bin: true, axis: nil)
+              |> Vl.encode_field(:x, "weight",
+                type: :quantitative,
+                aggregate: :count,
+                title: ""
+              )
+            ])
+          ],
+          :vertical
+        )
+
+      assert vl ==
+               Data.joint_plot(@data,
+                 x: "height",
+                 y: "weight",
+                 color: "height",
+                 text: "height",
+                 kind: :density_heatmap
+               )
+    end
+
+    test "raises an error when the x field is not given" do
+      assert_raise ArgumentError, "the x field is required to plot a jointplot", fn ->
+        Data.joint_plot(@data, y: "y")
+      end
+    end
+
+    test "raises an error when the y field is not given" do
+      assert_raise ArgumentError, "the y field is required to plot a jointplot", fn ->
+        Data.joint_plot(@data, x: "x", text: "text")
+      end
+    end
+  end
 end
