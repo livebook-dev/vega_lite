@@ -340,7 +340,7 @@ Vl.new(title: "Jointplot", spacing: 15, bounds: :flush)
 )
 ```
 
-The default `:kind'` is `:circle`, which means that `VegaLite.Data.joint_plot/2` generates a scatterplot with two marginal histograms by default.
+The default `:kind` is `:circle`, which means that `VegaLite.Data.joint_plot/2` generates a scatterplot with two marginal histograms by default.
 
 We can customize it passing any `:mark` as `:kind` or the also supported `:density_heatmap`.
 
