@@ -59,7 +59,6 @@ defmodule VegaLite.DataTest do
         |> Vl.mark(:point, line: true)
 
       assert vl == Vl.new() |> Data.chart(@data, x: "height") |> Vl.mark(:point, line: true)
-      assert vl == Data.chart(@data, x: "height") |> Vl.mark(:point, line: true)
     end
 
     test "single field with options" do
