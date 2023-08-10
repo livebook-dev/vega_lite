@@ -227,7 +227,7 @@ defmodule VegaLite.Data do
     end
 
     root_opts =
-      Keyword.filter([width: vl.spec["width"], height: vl.spec["height"]], fn {_k, v} -> v end)
+      Enum.filter([width: vl.spec["width"], height: vl.spec["height"]], fn {_k, v} -> v end)
 
     {kind, fields} = Keyword.pop(fields, :kind, :circle)
     {fields, used_fields} = build_base_options(fields)
