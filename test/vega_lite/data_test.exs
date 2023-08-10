@@ -728,7 +728,7 @@ defmodule VegaLite.DataTest do
       assert vl == Data.joint_plot(@data, :circle, x: "height", y: "weight", text: "width")
     end
 
-    test "mark as kind with options" do
+    test "mark with options" do
       vl =
         Vl.new(spacing: 15, bounds: :flush)
         |> Vl.data_from_values(@data, only: ["height", "weight"])
@@ -756,7 +756,7 @@ defmodule VegaLite.DataTest do
       assert vl == Data.joint_plot(@data, [type: :point, filled: true], x: "height", y: "weight")
     end
 
-    test "with a supported specialized as kind" do
+    test "with a supported specialized as mark" do
       vl =
         Vl.new(spacing: 15, bounds: :flush)
         |> Vl.data_from_values(@data, only: ["height", "weight"])
@@ -799,7 +799,8 @@ defmodule VegaLite.DataTest do
         )
 
       assert vl ==
-               Data.joint_plot(@data,
+               Data.joint_plot(
+                 @data,
                  :density_heatmap,
                  x: "height",
                  y: "weight",
