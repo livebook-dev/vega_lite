@@ -207,7 +207,7 @@ defmodule VegaLite.Data do
   As a specialized chart, the jointplot expects an `:x` and `:y` and optionally a `:color` and a
   `:text` field. All data must be `:quantitative`.
 
-  Besides all marks, it also accepts the specialized chart `:density_heatmap`.
+  Besides all marks, it supports `:density_heatmap` as a special value.
 
   All customizations apply to the main chart only. The marginal histograms are not customizable.
 
