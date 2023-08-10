@@ -230,9 +230,9 @@ defmodule VegaLite.Data do
       Keyword.filter([width: vl.spec["width"], height: vl.spec["height"]], fn {_k, v} -> v end)
 
     {kind, fields} = Keyword.pop(fields, :kind, :circle)
-    {_cols, fields, used_fields} = build_options(data, fields)
+    {fields, used_fields} = build_base_options(fields)
 
-    marginals = build_marginal_jointplot(data, fields, root_opts)
+    marginals = build_marginal_jointplot(fields, root_opts)
     main_chart = build_main_jointplot(data, kind, fields, root_opts)
 
     build_jointplot(vl, data, used_fields, main_chart, marginals)
@@ -298,11 +298,11 @@ defmodule VegaLite.Data do
     |> Map.update!(:spec, &Map.delete(&1, "data"))
   end
 
-  defp build_marginal_jointplot(data, fields, opts) do
-    {x, y} = {fields[:x], fields[:y]}
+  defp build_marginal_jointplot(fields, opts) do
+    {x, y} = {fields[:x][:field], fields[:y][:field]}
 
-    xx = [bin: true, axis: nil]
-    xy = [aggregate: :count, title: ""]
+    xx = [type: :quantitative, bin: true, axis: nil]
+    xy = [type: :quantitative, aggregate: :count, title: ""]
 
     x_root =
       if opts[:width], do: Vl.new(height: 60, width: opts[:width]), else: Vl.new(height: 60)
@@ -312,13 +312,15 @@ defmodule VegaLite.Data do
 
     x_hist =
       x_root
-      |> chart(data, :bar, x: x ++ xx, y: x ++ xy)
-      |> Map.update!(:spec, &Map.delete(&1, "data"))
+      |> Vl.mark(:bar)
+      |> Vl.encode_field(:x, x, xx)
+      |> Vl.encode_field(:y, x, xy)
 
     y_hist =
       y_root
-      |> chart(data, :bar, x: y ++ xy, y: y ++ xx)
-      |> Map.update!(:spec, &Map.delete(&1, "data"))
+      |> Vl.mark(:bar)
+      |> Vl.encode_field(:x, y, xy)
+      |> Vl.encode_field(:y, y, xx)
 
     {x_hist, y_hist}
   end
@@ -348,9 +350,15 @@ defmodule VegaLite.Data do
   end
 
   defp build_options(data, fields, fun \\ fn _field, opts -> opts end) do
+    {fields, used_fields} = build_base_options(fields, fun)
+    {columns_for(data), fields, used_fields}
+  end
+
+  # Avoiding unnecessary calls to columns_for
+  defp build_base_options(fields, fun \\ fn _field, opts -> opts end) do
     {extra_fields, fields} = Keyword.pop(fields, :extra_fields)
     used_fields = Enum.uniq(used_fields(fields) ++ List.wrap(extra_fields))
-    {columns_for(data), standardize_fields(fields, fun), used_fields}
+    {standardize_fields(fields, fun), used_fields}
   end
 
   defp used_fields(fields) do
