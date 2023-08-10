@@ -207,7 +207,6 @@ defmodule VegaLite.Data do
   @spec joint_plot(Table.Reader.t(), keyword()) :: VegaLite.t()
   def joint_plot(data, fields), do: joint_plot(Vl.new(), data, fields)
 
-
   @doc """
   Same as joint_plot/2, but takes a valid `VegaLite` specification as the first argument.
 
@@ -227,19 +226,19 @@ defmodule VegaLite.Data do
       raise ArgumentError, "the #{key} field is required to plot a jointplot"
     end
 
-    opts =
-      [width: vl.spec["width"], height: vl.spec["height"]] |> Keyword.filter(fn {_k, v} -> v end)
+    root_opts =
+      Keyword.filter([width: vl.spec["width"], height: vl.spec["height"]], fn {_k, v} -> v end)
 
     {kind, fields} = Keyword.pop(fields, :kind, :circle)
     {_cols, fields, used_fields} = build_options(data, fields)
 
-    marginals = build_marginal_jointplot(data, fields, opts)
-    main_chart = build_main_jointplot(data, kind, fields, opts)
+    marginals = build_marginal_jointplot(data, fields, root_opts)
+    main_chart = build_main_jointplot(data, kind, fields, root_opts)
 
     build_jointplot(vl, data, used_fields, main_chart, marginals)
   end
 
-  ## Specialized defaults
+  ## Specialized - defaults
 
   defp heatmap_defaults(field, opts) when field in [:x, :y] do
     Keyword.put_new(opts, :type, :nominal)
@@ -249,9 +248,7 @@ defmodule VegaLite.Data do
     Keyword.put_new(opts, :type, :quantitative)
   end
 
-  defp heatmap_defaults(_field, opts) do
-    opts
-  end
+  defp heatmap_defaults(_field, opts), do: opts
 
   defp density_heatmap_defaults(field, opts) when field in [:x, :y] do
     opts |> Keyword.put_new(:type, :quantitative) |> Keyword.put_new(:bin, true)
@@ -261,60 +258,27 @@ defmodule VegaLite.Data do
     opts |> Keyword.put_new(:type, :quantitative) |> Keyword.put_new(:aggregate, :count)
   end
 
-  defp density_heatmap_defaults(_field, opts) do
-    opts
-  end
+  defp density_heatmap_defaults(_field, opts), do: opts
 
-  ## Shared helpers
-
-  defp encode_mark(vl, opts) when is_list(opts) do
-    {mark, opts} = Keyword.pop!(opts, :type)
-    Vl.mark(vl, mark, opts)
-  end
-
-  defp encode_mark(vl, mark) when is_atom(mark), do: Vl.mark(vl, mark)
-
-  defp encode_fields(fields, root, cols) do
-    Enum.reduce(fields, root, fn {field, opts}, acc -> encode_field(acc, cols, field, opts) end)
-  end
-
-  defp encode_field(schema, cols, field, opts) do
-    {col, opts} = Keyword.pop!(opts, :field)
-    opts = Keyword.put_new_lazy(opts, :type, fn -> cols[col] end)
-    Vl.encode_field(schema, field, col, opts)
-  end
-
-  defp encode_layer(cols, mark, fields) do
-    root = Vl.new() |> encode_mark(mark)
-    encode_fields(fields, root, cols)
-  end
-
-  defp build_options(data, fields, fun \\ fn _field, opts -> opts end) do
-    {extra_fields, fields} = Keyword.pop(fields, :extra_fields)
-    used_fields = Enum.uniq(used_fields(fields) ++ List.wrap(extra_fields))
-    {columns_for(data), standardize_fields(fields, fun), used_fields}
-  end
+  ### Specialized - builders
 
   defp build_heatmap_layers(vl, data, {cols, fields, used_fields}) do
     text_fields = Keyword.take(fields, [:text, :x, :y])
     rect_fields = Keyword.delete(fields, :text)
 
-    layers =
-      [encode_layer(cols, :rect, rect_fields)] ++
-        if fields[:text] do
-          [encode_layer(cols, :text, text_fields)]
-        else
-          []
-        end
+    text_layer = if fields[:text], do: [encode_layer(cols, :text, text_fields)], else: []
+    rect_layer = [encode_layer(cols, :rect, rect_fields)]
 
     vl
     |> Vl.data_from_values(data, only: used_fields)
-    |> Vl.layers(layers)
+    |> Vl.layers(rect_layer ++ text_layer)
   end
 
   defp build_jointplot(vl, data, used_fields, main_chart, {x_hist, y_hist}) do
+    root_visuals = %{"bounds" => "flush", "spacing" => 15}
+
     vl
-    |> Map.update!(:spec, &Map.merge(&1, %{"bounds" => "flush", "spacing" => 15}))
+    |> Map.update!(:spec, &Map.merge(&1, root_visuals))
     |> Vl.data_from_values(data, only: used_fields)
     |> Vl.concat(
       [x_hist, Vl.new(spacing: 15, bounds: :flush) |> Vl.concat([main_chart, y_hist])],
@@ -357,6 +321,36 @@ defmodule VegaLite.Data do
       |> Map.update!(:spec, &Map.delete(&1, "data"))
 
     {x_hist, y_hist}
+  end
+
+  ## Shared helpers
+
+  defp encode_mark(vl, opts) when is_list(opts) do
+    {mark, opts} = Keyword.pop!(opts, :type)
+    Vl.mark(vl, mark, opts)
+  end
+
+  defp encode_mark(vl, mark) when is_atom(mark), do: Vl.mark(vl, mark)
+
+  defp encode_fields(fields, root, cols) do
+    Enum.reduce(fields, root, fn {field, opts}, acc -> encode_field(acc, cols, field, opts) end)
+  end
+
+  defp encode_field(schema, cols, field, opts) do
+    {col, opts} = Keyword.pop!(opts, :field)
+    opts = Keyword.put_new_lazy(opts, :type, fn -> cols[col] end)
+    Vl.encode_field(schema, field, col, opts)
+  end
+
+  defp encode_layer(cols, mark, fields) do
+    root = Vl.new() |> encode_mark(mark)
+    encode_fields(fields, root, cols)
+  end
+
+  defp build_options(data, fields, fun \\ fn _field, opts -> opts end) do
+    {extra_fields, fields} = Keyword.pop(fields, :extra_fields)
+    used_fields = Enum.uniq(used_fields(fields) ++ List.wrap(extra_fields))
+    {columns_for(data), standardize_fields(fields, fun), used_fields}
   end
 
   defp used_fields(fields) do
