@@ -426,7 +426,6 @@ defmodule VegaLite do
       ])
       |> ...
 
-
   See [the docs](https://vega.github.io/vega-lite/docs/encoding.html) for more details.
   """
   @spec encode(t(), atom(), keyword() | list(keyword())) :: t()
@@ -1126,6 +1125,9 @@ defmodule VegaLite do
 
   defp snake_to_camel(string) do
     [part | parts] = String.split(string, "_")
-    Enum.join([String.downcase(part, :ascii) | Enum.map(parts, &String.capitalize(&1, :ascii))])
+    Enum.join([String.downcase(part, :ascii) | Enum.map(parts, &capitalize/1)])
   end
+
+  defp capitalize(<<first, rest::binary>>) when first in ?a..?z, do: <<first - 32, rest::binary>>
+  defp capitalize(rest), do: rest
 end
