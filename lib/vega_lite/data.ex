@@ -324,7 +324,11 @@ defmodule VegaLite.Data do
 
   ## Infer types
 
-  defp columns_for(data) do
+  @doc """
+  Returns a map with each column and its respective inferred type for a given data
+  """
+  @spec columns_for(Table.Reader.t()) :: map() | nil
+  def columns_for(data) do
     with true <- implements?(Table.Reader, data),
          data = {_, %{columns: [_ | _] = columns}, _} <- Table.Reader.init(data),
          true <- Enum.all?(columns, &implements?(String.Chars, &1)) do
