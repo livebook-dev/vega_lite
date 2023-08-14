@@ -325,7 +325,7 @@ defmodule VegaLite.Data do
   ## Infer types
 
   @doc """
-  Returns a map with each column and its respective inferred type for a given data
+  Returns a map with each column and its respective inferred type for the given data.
   """
   @spec columns_for(Table.Reader.t()) :: map() | nil
   def columns_for(data) do
