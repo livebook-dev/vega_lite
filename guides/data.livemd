@@ -138,9 +138,9 @@ Specialized plots provide high-level abstractions for commonly used complex char
 
 ### Heatmap
 
-Plotting heatmaps directly from VegaLite requires a lot of code.
+A heatmap shows the values of a key variable of interest on two axes as a grid of colored squares. Although widely used and useful, plotting heatmaps directly from VegaLite requires a lot of code.
 
-For a more concrete example, we will use precomputed data from the correlation matrix of the wine dataset.
+*For a more concrete example, we will use precomputed data from the correlation matrix of the wine dataset.*
 
 <!-- livebook:{"disable_formatting":true} -->
 
@@ -275,28 +275,11 @@ Vl.new(title: "Correlation matrix", width: 600, height: 600)
 
 ### Density heatmap
 
-A density heatmap can is a heatmap of binned quantitative data.
+A density heatmap is a heatmap of binned quantitative data. It requires binned data and an aggregation function.
 
-It requires binned data and an aggregation function. Consequently, plotting it directly from VegaLite can be quite verbose.
+<!-- livebook:{"break_markdown":true} -->
 
-```elixir
-Vl.new(title: "Density heatmap", width: 400, height: 250)
-|> Vl.data_from_values(iris, only: ["sepal_length", "sepal_width"])
-|> Vl.layers([
-  Vl.new()
-  |> Vl.mark(:rect)
-  |> Vl.encode_field(:x, "sepal_length", type: :quantitative, bin: true)
-  |> Vl.encode_field(:y, "sepal_width", type: :quantitative, bin: true)
-  |> Vl.encode_field(:color, "sepal_length", type: :quantitative, aggregate: :count),
-  Vl.new()
-  |> Vl.mark(:text)
-  |> Vl.encode_field(:x, "sepal_length", type: :quantitative, bin: true)
-  |> Vl.encode_field(:y, "sepal_width", type: :quantitative, bin: true)
-  |> Vl.encode_field(:text, "sepal_length", type: :quantitative, aggregate: :count)
-])
-```
-
-Or we can use the `VegaLite.Data.density_heatmap/2` and `VegaLite.Data.density_heatmap/3` functions. They are very similar to `VegaLite.Data.heatmap/2` and `VegaLite.Data.heatmap/3`, but expect quantitative data.
+To plot them, we can use the `VegaLite.Data.density_heatmap/2` and `VegaLite.Data.density_heatmap/3` functions. They are very similar to `VegaLite.Data.heatmap/2` and `VegaLite.Data.heatmap/3`, but expect quantitative data.
 
 The default agregation functions is `:count`.
 
@@ -315,79 +298,15 @@ Vl.new(title: "Density heatmap", width: 400, height: 250)
 A jointplot shows the relationship between two variables and the distribution of individuals of each one. It expects quantitative data.
 
 ```elixir
-Vl.new(title: "Jointplot", spacing: 15, bounds: :flush)
-|> Vl.data_from_values(iris, only: ["sepal_length", "sepal_width"])
-|> Vl.concat(
-  [
-    Vl.new(height: 60)
-    |> Vl.mark(:bar)
-    |> Vl.encode_field(:x, "sepal_length", type: :quantitative, bin: true, axis: nil)
-    |> Vl.encode_field(:y, "sepal_length", type: :quantitative, aggregate: :count, title: ""),
-    Vl.new(spacing: 15, bounds: :flush)
-    |> Vl.concat([
-      Vl.new()
-      |> Vl.mark(:circle)
-      |> Vl.encode_field(:x, "sepal_length", type: :quantitative)
-      |> Vl.encode_field(:y, "sepal_width", type: :quantitative)
-      |> Vl.encode_field(:color, "sepal_length", type: :quantitative),
-      Vl.new(width: 60)
-      |> Vl.mark(:bar)
-      |> Vl.encode_field(:y, "sepal_width", type: :quantitative, bin: true, axis: nil)
-      |> Vl.encode_field(:x, "sepal_width", type: :quantitative, aggregate: :count, title: "")
-    ])
-  ],
-  :vertical
-)
-```
-
-```elixir
 Vl.new(title: "Jointplot")
 |> Data.joint_plot(iris, :circle, x: "sepal_length", y: "sepal_width", color: "sepal_length")
 ```
 
-```elixir
-Vl.new(
-  title: "Jointplot with a density heatmap",
-  width: 500,
-  height: 350,
-  spacing: 15,
-  bounds: :flush
-)
-|> Vl.data_from_values(iris, only: ["sepal_length", "sepal_width"])
-|> Vl.concat(
-  [
-    Vl.new(height: 60, width: 500)
-    |> Vl.mark(:bar)
-    |> Vl.encode_field(:x, "sepal_length", type: :quantitative, bin: true, axis: nil)
-    |> Vl.encode_field(:y, "sepal_length", type: :quantitative, aggregate: :count, title: ""),
-    Vl.new(spacing: 15, bounds: :flush)
-    |> Vl.concat([
-      Vl.new(width: 500, height: 350)
-      |> Vl.layers([
-        Vl.new()
-        |> Vl.mark(:rect)
-        |> Vl.encode_field(:x, "sepal_length", type: :quantitative, bin: true)
-        |> Vl.encode_field(:y, "sepal_width", type: :quantitative, bin: true)
-        |> Vl.encode_field(:color, "sepal_length", type: :quantitative, aggregate: :count),
-        Vl.new()
-        |> Vl.mark(:text)
-        |> Vl.encode_field(:x, "sepal_length", type: :quantitative, bin: true)
-        |> Vl.encode_field(:y, "sepal_width", type: :quantitative, bin: true)
-        |> Vl.encode_field(:text, "sepal_length", type: :quantitative, aggregate: :count)
-      ]),
-      Vl.new(width: 60, height: 350)
-      |> Vl.mark(:bar)
-      |> Vl.encode_field(:y, "sepal_width", type: :quantitative, bin: true, axis: nil)
-      |> Vl.encode_field(:x, "sepal_width", type: :quantitative, aggregate: :count, title: "")
-    ])
-  ],
-  :vertical
-)
-```
+The `VegaLite.Data.joint_plot/4` function takes care of all the visual aspects, such as adjusting the size of marginal histograms and their spacing.
 
-The function `VegaLite.Data.joint_plot/4` takes care of all the visual aspects, such as adjusting the size of marginal histograms and their spacing.
+The second argument receives the `:mark` for the main chart and its options. It supports `:density_heatmap` as a special value.
 
-All customizations apply to the main chart only. The marginal histograms are not customizable.
+Keep in mind that all customizations apply to the main chart only. The marginal histograms are not customizable.
 
 ```elixir
 Vl.new(title: "Jointplot with a density heatmap", width: 500, height: 350)
