@@ -109,9 +109,9 @@ defmodule VegaLite.Data do
   @doc """
   Returns the specification of a heat map for a given data and a list of fields to be encoded.
 
-  As a specialized chart, the heatmap expects an `:x` and `:y` and optionally a `:color` and a
-  `:text` field. Defaults to `:nominal` for the axes and `:quantitative` for color and text if
-  types are not specified.
+  As a specialized chart, the heatmap expects an `:x` and `:y` and optionally a `:color`, a
+  `:text` and a `:text_color` fields. Defaults to `:nominal` for the axes and `:quantitative`
+  for color and text if types are not specified.
 
   ## Examples
 
@@ -140,8 +140,13 @@ defmodule VegaLite.Data do
   defp heatmap_no_data(vl, data, fields, fun) do
     cols = columns_for(data)
     fields = normalize_fields(fields, fun)
-    text_fields = Keyword.take(fields, [:text, :x, :y])
-    rect_fields = Keyword.delete(fields, :text)
+    text_fields = Keyword.take(fields, [:text, :text_color, :x, :y])
+    rect_fields = Keyword.drop(fields, [:text, :text_color])
+
+    {text_color, text_fields} = Keyword.pop(text_fields, :text_color)
+
+    text_fields =
+      if text_color, do: Keyword.put_new(text_fields, :color, text_color), else: text_fields
 
     text_layer = if fields[:text], do: [encode_layer(cols, :text, text_fields)], else: []
     rect_layer = [encode_layer(cols, :rect, rect_fields)]
@@ -163,8 +168,8 @@ defmodule VegaLite.Data do
   Returns the specification of a density heat map for a given data and a list of fields to be encoded.
 
   As a specialized chart, the density heatmap expects the `:x` and `:y` axes, a `:color` field and
-  optionally a `:text` field. All data must be `:quantitative` and the default aggregation
-  function is `:count`.
+  optionally a `:text` and a `:text_color` fields. All data must be `:quantitative` and the default
+  aggregation function is `:count`.
 
   ## Examples
 

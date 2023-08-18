@@ -264,6 +264,74 @@ defmodule VegaLite.DataTest do
       assert vl == Data.heatmap(@data, x: "height", y: "weight", color: "height", text: "height")
     end
 
+    test "with text_color" do
+      vl =
+        Vl.new()
+        |> Vl.data_from_values(@data, only: ["height", "weight"])
+        |> Vl.layers([
+          Vl.new()
+          |> Vl.mark(:rect)
+          |> Vl.encode_field(:x, "height", type: :nominal)
+          |> Vl.encode_field(:y, "weight", type: :nominal)
+          |> Vl.encode_field(:color, "height", type: :quantitative),
+          Vl.new()
+          |> Vl.mark(:text)
+          |> Vl.encode_field(:x, "height", type: :nominal)
+          |> Vl.encode_field(:y, "weight", type: :nominal)
+          |> Vl.encode_field(:text, "height", type: :quantitative)
+          |> Vl.encode_field(:color, "height", type: :quantitative)
+        ])
+
+      assert vl ==
+               Data.heatmap(@data,
+                 x: "height",
+                 y: "weight",
+                 color: "height",
+                 text: "height",
+                 text_color: "height"
+               )
+    end
+
+    test "with text_color with condition" do
+      vl =
+        Vl.new()
+        |> Vl.data_from_values(@data, only: ["height", "weight"])
+        |> Vl.layers([
+          Vl.new()
+          |> Vl.mark(:rect)
+          |> Vl.encode_field(:x, "height", type: :nominal)
+          |> Vl.encode_field(:y, "weight", type: :nominal)
+          |> Vl.encode_field(:color, "height", type: :quantitative),
+          Vl.new()
+          |> Vl.mark(:text)
+          |> Vl.encode_field(:x, "height", type: :nominal)
+          |> Vl.encode_field(:y, "weight", type: :nominal)
+          |> Vl.encode_field(:text, "height", type: :quantitative)
+          |> Vl.encode_field(:color, "height",
+            type: :quantitative,
+            condition: [
+              [test: "datum['height'] < 0", value: :white],
+              [test: "datum['height'] >= 0", value: :black]
+            ]
+          )
+        ])
+
+      assert vl ==
+               Data.heatmap(@data,
+                 x: "height",
+                 y: "weight",
+                 color: "height",
+                 text: "height",
+                 text_color: [
+                   field: "height",
+                   condition: [
+                     [test: "datum['height'] < 0", value: :white],
+                     [test: "datum['height'] >= 0", value: :black]
+                   ]
+                 ]
+               )
+    end
+
     test "with title and extra fields" do
       vl =
         Vl.new(title: "Heatmap")
@@ -447,6 +515,74 @@ defmodule VegaLite.DataTest do
                  y: "weight",
                  color: "height",
                  text: "height"
+               )
+    end
+
+    test "with text_color" do
+      vl =
+        Vl.new()
+        |> Vl.data_from_values(@data, only: ["height", "weight"])
+        |> Vl.layers([
+          Vl.new()
+          |> Vl.mark(:rect)
+          |> Vl.encode_field(:x, "height", type: :quantitative, bin: true)
+          |> Vl.encode_field(:y, "weight", type: :quantitative, bin: true)
+          |> Vl.encode_field(:color, "height", type: :quantitative, aggregate: :count),
+          Vl.new()
+          |> Vl.mark(:text)
+          |> Vl.encode_field(:x, "height", type: :quantitative, bin: true)
+          |> Vl.encode_field(:y, "weight", type: :quantitative, bin: true)
+          |> Vl.encode_field(:text, "height", type: :quantitative, aggregate: :count)
+          |> Vl.encode_field(:color, "height", type: :quantitative)
+        ])
+
+      assert vl ==
+               Data.density_heatmap(@data,
+                 x: "height",
+                 y: "weight",
+                 color: "height",
+                 text: "height",
+                 text_color: "height"
+               )
+    end
+
+    test "with text_color with condition" do
+      vl =
+        Vl.new()
+        |> Vl.data_from_values(@data, only: ["height", "weight"])
+        |> Vl.layers([
+          Vl.new()
+          |> Vl.mark(:rect)
+          |> Vl.encode_field(:x, "height", type: :quantitative, bin: true)
+          |> Vl.encode_field(:y, "weight", type: :quantitative, bin: true)
+          |> Vl.encode_field(:color, "height", type: :quantitative, aggregate: :count),
+          Vl.new()
+          |> Vl.mark(:text)
+          |> Vl.encode_field(:x, "height", type: :quantitative, bin: true)
+          |> Vl.encode_field(:y, "weight", type: :quantitative, bin: true)
+          |> Vl.encode_field(:text, "height", type: :quantitative, aggregate: :count)
+          |> Vl.encode_field(:color, "height",
+            type: :quantitative,
+            condition: [
+              [test: "datum['height'] < 0", value: :white],
+              [test: "datum['height'] >= 0", value: :black]
+            ]
+          )
+        ])
+
+      assert vl ==
+               Data.density_heatmap(@data,
+                 x: "height",
+                 y: "weight",
+                 color: "height",
+                 text: "height",
+                 text_color: [
+                   field: "height",
+                   condition: [
+                     [test: "datum['height'] < 0", value: :white],
+                     [test: "datum['height'] >= 0", value: :black]
+                   ]
+                 ]
                )
     end
 
