@@ -168,7 +168,7 @@ defmodule VegaLite.Data do
   Returns the specification of a density heat map for a given data and a list of fields to be encoded.
 
   As a specialized chart, the density heatmap expects the `:x` and `:y` axes, a `:color` field and
-  optionally a `:text` and a `:text_color` field. All data must be `:quantitative` and the default
+  optionally a `:text` and a `:text_color` fields. All data must be `:quantitative` and the default
   aggregation function is `:count`.
 
   ## Examples
