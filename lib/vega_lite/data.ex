@@ -110,7 +110,7 @@ defmodule VegaLite.Data do
   Returns the specification of a heat map for a given data and a list of fields to be encoded.
 
   As a specialized chart, the heatmap expects an `:x` and `:y` and optionally a `:color`, a
-  `:text` and a `:text_color` field. Defaults to `:nominal` for the axes and `:quantitative`
+  `:text` and a `:text_color` fields. Defaults to `:nominal` for the axes and `:quantitative`
   for color and text if types are not specified.
 
   ## Examples
