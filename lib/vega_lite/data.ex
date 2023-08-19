@@ -350,7 +350,7 @@ defmodule VegaLite.Data do
     * `:direction` - one of `:counter_clockwise` or `:clockwise`, which will affect the direction
       in which the angles grow from the starting point. Defaults to `:counter_clockwise`.
     * `:angle_marks` - list of angles for marking the grid. Defaults to `Enum.to_list(0..360//90)`.
-    * `:theta_offset` - offset for the 0º reference. The sign will obey the `:direction` option. Defaults to `0`.
+    * `:angle_offset` - offset for the 0º reference. The sign will obey the `:direction` option. Defaults to `0`.
     * `:grid_opacity` - opacity of the grid. Defaults to `1`.
     * `:grid_color` - backround color for the grid. Defaults to `"white"`.
     * `:grid_stroke_color` - stroke color for the grid markings. Defaults to `"black"`.
@@ -403,16 +403,18 @@ defmodule VegaLite.Data do
         legend_key: legend_key
       )
   """
-  def polar_plot(vl \\ Vl.new(), data, opts \\ []) do
+  def polar_plot(vl \\ Vl.new(), data, fields, opts \\ []) do
     opts =
       Keyword.validate!(
         opts,
         [
           :radius_marks,
-          :legend_key,
+          :mark,
+          mark_opts: [],
+          return_grid: true,
           direction: :counter_clockwise,
           angle_marks: [0, 90, 180, 270, 360],
-          theta_offset: 0,
+          angle_offset: 0,
           grid_opacity: 1,
           grid_color: "white",
           grid_stroke_color: "black",
@@ -421,56 +423,51 @@ defmodule VegaLite.Data do
         ]
       )
 
-    data =
-      case data do
-        {%{} = data, mark} ->
-          [{data, mark, []}]
+    data_layer = polar_plot_data_layers(data, fields, opts[:mark], opts[:mark_opts], opts)
 
-        [_ | _] = data ->
-          Enum.map(data, fn
-            {data, mark} -> {Map.new(data, fn {k, v} -> {to_string(k), v} end), mark, []}
-            {data, mark, opts} -> {Map.new(data, fn {k, v} -> {to_string(k), v} end), mark, opts}
-          end)
+    if opts[:return_grid] do
+      unless opts[:radius_marks] do
+        raise ArgumentError, "missing :radius_marks option"
       end
 
-    opts =
-      case opts[:radius_marks] do
-        nil ->
-          radius_marks = polar_infer_radius_marks(data)
-          Keyword.put(opts, :radius_marks, radius_marks)
+      grid_layers = polar_angle_layers(opts)
+      radius_layers = polar_radius_layers(opts)
 
-        _marks ->
-          opts
-      end
+      vl
+      |> Vl.data_from_values(%{_r: [1]})
+      |> append_layers(grid_layers ++ radius_layers ++ [data_layer])
+    else
+      append_layers(vl, [data_layer])
+    end
+  end
 
-    grid_layers = polar_angle_layers(opts)
-    radius_layers = polar_radius_layers(opts)
-    data_layers = polar_plot_data_layers(data, opts)
+  defp append_layers(vl, layers) do
+    layers = Enum.map(layers, &(&1 |> Vl.to_spec() |> Map.delete("$schema")))
 
-    vl
-    |> Vl.data_from_values(%{_r: [1]})
-    |> Vl.layers(grid_layers ++ radius_layers ++ data_layers)
+    update_in(vl.spec, fn spec ->
+      Map.update(spec, "layer", layers, &(&1 ++ layers))
+    end)
   end
 
   defp deg_to_rad(angle), do: angle * :math.pi() / 180
 
   defp polar_angle_layers(opts) do
     angle_marks_input = opts[:angle_marks]
-    theta_offset = opts[:theta_offset]
+    angle_offset = opts[:angle_offset]
 
-    {angle_marks, angle_marks2, theta_offset} =
+    {angle_marks, angle_marks2, angle_offset} =
       case opts[:direction] do
         :clockwise ->
           angle_marks = [0 | Enum.sort(angle_marks_input)]
           angle_marks2 = tl(angle_marks) ++ [360]
 
-          {angle_marks, angle_marks2, theta_offset + 90}
+          {angle_marks, angle_marks2, angle_offset + 90}
 
         :counter_clockwise ->
           angle_marks = [360 | Enum.sort(angle_marks_input, :desc)]
           angle_marks2 = tl(angle_marks) ++ [0]
 
-          {Enum.map(angle_marks, &(-&1)), Enum.map(angle_marks2, &(-&1)), -theta_offset + 90}
+          {Enum.map(angle_marks, &(-&1)), Enum.map(angle_marks2, &(-&1)), -angle_offset + 90}
       end
 
     has_zero = 0 in angle_marks_input
@@ -485,15 +482,15 @@ defmodule VegaLite.Data do
           Vl.new()
           |> Vl.mark(:text,
             text: to_string(abs(t)) <> "º",
-            theta: "#{deg_to_rad(t + theta_offset)}",
+            theta: "#{deg_to_rad(t + angle_offset)}",
             radius: [expr: "min(width, height) * 0.55"]
           )
         else
           []
         end
 
-      theta = deg_to_rad(t + theta_offset)
-      theta2 = deg_to_rad(t2 + theta_offset)
+      theta = deg_to_rad(t + angle_offset)
+      theta2 = deg_to_rad(t2 + angle_offset)
 
       [
         Vl.new()
@@ -547,106 +544,83 @@ defmodule VegaLite.Data do
     radius_marks_vl ++ radius_ruler_vl
   end
 
-  defp polar_infer_radius_marks(data) do
-    {min_r, max_r} =
-      data
-      |> Enum.flat_map(fn {data, _mark, _opts} ->
-        Enum.uniq(data["r"])
-      end)
-      |> Enum.min_max()
-
-    min_r = floor(min_r)
-    max_r = ceil(max_r)
-
-    range = min_r..(max_r + rem(max_r - min_r, 2))//2
-
-    Enum.to_list(range)
-  end
-
-  defp polar_plot_data_layers(data, opts) do
+  defp polar_plot_data_layers(data, fields, mark, mark_opts, opts) do
     pi = :math.pi()
-    legend_key = opts[:legend_key]
+    legend_key = fields[:legend]
 
     {x_sign, y_sign} = if opts[:direction] == :counter_clockwise, do: {"-", "+"}, else: {"+", "-"}
 
-    rotation = deg_to_rad(opts[:theta_offset])
+    rotation = deg_to_rad(opts[:angle_offset])
 
     radius_marks = opts[:radius_marks]
     max_radius = Enum.max(radius_marks)
 
-    for {data, mark, mark_opts} <- data do
-      x_formula =
-        "datum.x_linear * cos(#{rotation}) #{x_sign}datum.y_linear * sin(#{rotation})"
+    x_formula =
+      "datum.x_linear * cos(#{rotation}) #{x_sign}datum.y_linear * sin(#{rotation})"
 
-      y_formula =
-        "#{y_sign}datum.x_linear * sin(#{rotation}) + datum.y_linear * cos(#{rotation})"
+    y_formula =
+      "#{y_sign}datum.x_linear * sin(#{rotation}) + datum.y_linear * cos(#{rotation})"
 
-      Vl.new()
-      |> Vl.data_from_values(data)
-      |> Vl.transform(calculate: "datum.r * cos(datum.theta * #{pi / 180})", as: "x_linear")
-      |> Vl.transform(
-        calculate: "datum.r * sin(#{y_sign}datum.theta * #{pi / 180})",
-        as: "y_linear"
-      )
-      |> Vl.transform(calculate: x_formula, as: "x")
-      |> Vl.transform(calculate: y_formula, as: "y")
-      |> Vl.mark(mark, mark_opts)
-      |> then(fn vl ->
-        if legend_key do
-          Vl.encode_field(vl, :color, legend_key, type: :nominal, scale: [scheme: opts[:scheme]])
-        else
-          vl
-        end
+    r = fields[:r]
+    theta = fields[:theta]
+
+    Vl.new()
+    |> Vl.data_from_values(data)
+    |> Vl.transform(calculate: "datum.#{r} * cos(datum.#{theta} * #{pi / 180})", as: "x_linear")
+    |> Vl.transform(
+      calculate: "datum.#{r} * sin(#{y_sign}datum.#{theta} * #{pi / 180})",
+      as: "y_linear"
+    )
+    |> Vl.transform(calculate: x_formula, as: "x")
+    |> Vl.transform(calculate: y_formula, as: "y")
+    |> Vl.mark(mark, mark_opts)
+    |> then(fn vl ->
+      if legend_key do
+        Vl.encode_field(vl, :color, legend_key, type: :nominal, scale: [scheme: opts[:scheme]])
+      else
+        vl
+      end
+    end)
+    |> Vl.encode(:x, field: "x", type: :quantitative,
+      scale: [
+        domain: [-max_radius, max_radius]
+      ],
+      axis: [
+        grid: false,
+        ticks: false,
+        domain_opacity: 0,
+        labels: false,
+        title: false,
+        domain: false,
+        offset: 50
+      ]
+    )
+    |> Vl.encode_field(:y, "y",
+      type: :quantitative,
+      scale: [
+        domain: [-max_radius, max_radius]
+      ],
+      axis: [
+        grid: false,
+        ticks: false,
+        domain_opacity: 0,
+        labels: false,
+        title: false,
+        domain: false,
+        offset: 50
+      ]
+    )
+    |> Vl.encode_field(:order, "theta")
+    |> Vl.encode(
+      :tooltip,
+      Enum.map(data, fn
+        {^legend_key, _} ->
+          [field: to_string(legend_key), type: :nominal]
+
+        {field, _} ->
+          [field: to_string(field), type: :quantitative]
       end)
-      |> then(fn vl ->
-        if Map.has_key?(data, "stroke_dash") or Map.has_key?(data, :stroke_dash) do
-          Vl.encode_field(vl, :stroke_dash, "stroke_dash", type: :quantitative)
-        else
-          vl
-        end
-      end)
-      |> Vl.encode_field(:x, "x",
-        type: :quantitative,
-        scale: [
-          domain: [-max_radius, max_radius]
-        ],
-        axis: [
-          grid: false,
-          ticks: false,
-          domain_opacity: 0,
-          labels: false,
-          title: false,
-          domain: false,
-          offset: 50
-        ]
-      )
-      |> Vl.encode_field(:y, "y",
-        type: :quantitative,
-        scale: [
-          domain: [-max_radius, max_radius]
-        ],
-        axis: [
-          grid: false,
-          ticks: false,
-          domain_opacity: 0,
-          labels: false,
-          title: false,
-          domain: false,
-          offset: 50
-        ]
-      )
-      |> Vl.encode_field(:order, "theta")
-      |> Vl.encode(
-        :tooltip,
-        Enum.map(data, fn
-          {^legend_key, _} ->
-            [field: to_string(legend_key), type: :nominal]
-
-          {field, _} ->
-            [field: to_string(field), type: :quantitative]
-        end)
-      )
-    end
+    )
   end
 
   ## Infer types
