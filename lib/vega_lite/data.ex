@@ -327,6 +327,328 @@ defmodule VegaLite.Data do
     end
   end
 
+  @doc """
+  Returns the specification of a polar plot of the input data.
+
+  `data` must be a list containing one of the following kinds of tuple:
+
+    * `{data points, mark type}`
+    * `{data points, mark type, mark opts}`
+
+  Where the tuple entries are:
+
+    * `data points` - a map of VegaLite data containing the keys `%{"r" => ..., "theta" => ...}` and an optional key
+      that can have any value that will be accessed by the value given in the `:legend_key` option.
+    * `mark type` - a valid mark to be passed into `VegaLite.mark/3`
+    * `mark opts` - a keyword to be passed into `VegaLite.mark/3`
+
+  ## Options
+
+    * `:radius_marks` - optional list of values for the radius markings. If not passed,
+      will be inferred from the given data points.
+    * `:legend_key` - optional string for accessing `data points` for grouping in the plot legend.
+    * `:direction` - one of `:counter_clockwise` or `:clockwise`, which will affect the direction
+      in which the angles grow from the starting point. Defaults to `:counter_clockwise`.
+    * `:angle_marks` - list of angles for marking the grid. Defaults to `Enum.to_list(0..360//90)`.
+    * `:theta_offset` - offset for the 0º reference. The sign will obey the `:direction` option. Defaults to `0`.
+    * `:grid_opacity` - opacity of the grid. Defaults to `1`.
+    * `:grid_color` - backround color for the grid. Defaults to `"white"`.
+    * `:grid_stroke_color` - stroke color for the grid markings. Defaults to `"black"`.
+    * `:grid_stroke_opacity` - opacity for the grid strokes. Defaults to `1`.
+    * `:scheme` - the color scheme for multi-line plots. Defaults to `"turbo"`
+
+  ## Examples
+
+  In the example below, we plot a dataset by specifying stylized point marks and connecting it with
+  an interpolated line.
+
+      data = %{"r" => [1, 2, 3, 3, 4], "theta" => [0, 30, 45, 135, 270]}
+
+      VegaLite.Data.polar_plot(
+        VegaLite.new(title: "Polar Plot", height: 500, width: 500),
+        [
+          {data, :point, [stroke: "white", stroke_width: 3, tooltip: [data: true]]},
+          {data, :line, point: true, interpolate: "cardinal", color: "black", tooltip: [data: true]}
+        ],
+        angle_marks: [0, 15, 30, 45, 60, 90, 180, 270, 360],
+        radius_marks: [0, 1, 2, 3, 4, 5]
+      )
+
+  In the next example, we add a second line to the plot grouping by the `:legend_key`.
+  Note that the `:legend_key` will also be the legend title, so a readable name is desirable.
+
+      legend_key = "Line Groups"
+
+      data = %{
+        "r" => [1, 2, 3, 3, 4],
+        "theta" => [0, 30, 45, 135, 270],
+        legend_key => List.duplicate("First Line", 5)
+      }
+
+      other_data = %{
+        "r" => [8, 6, 4, 2, 0],
+        "theta" => [0, 30, 60, 90, 120],
+        legend_key => List.duplicate("Second Line", 5)
+      }
+
+      VegaLite.Data.polar_plot(
+        VegaLite.new(title: "Polar Plot", height: 500, width: 500),
+        [
+          {data, :point, [stroke: "black", stroke_width: 3]},
+          {data, :line, point: true, interpolate: "cardinal"},
+          {other_data, :point, [stroke: "black", stroke_width: 3]},
+          {other_data, :line, point: true, interpolate: "cardinal"}
+        ],
+        angle_marks: [0, 15, 30, 45, 60, 90, 180, 270, 360],
+        legend_key: legend_key
+      )
+  """
+  def polar_plot(vl \\ Vl.new(), data, opts \\ []) do
+    opts =
+      Keyword.validate!(
+        opts,
+        [
+          :radius_marks,
+          :legend_key,
+          direction: :counter_clockwise,
+          angle_marks: [0, 90, 180, 270, 360],
+          theta_offset: 0,
+          grid_opacity: 1,
+          grid_color: "white",
+          grid_stroke_color: "black",
+          grid_stroke_opacity: 1,
+          scheme: "turbo"
+        ]
+      )
+
+    data =
+      case data do
+        {%{} = data, mark} ->
+          [{data, mark, []}]
+
+        [_ | _] = data ->
+          Enum.map(data, fn
+            {data, mark} -> {Map.new(data, fn {k, v} -> {to_string(k), v} end), mark, []}
+            {data, mark, opts} -> {Map.new(data, fn {k, v} -> {to_string(k), v} end), mark, opts}
+          end)
+      end
+
+    opts =
+      case opts[:radius_marks] do
+        nil ->
+          radius_marks = polar_infer_radius_marks(data)
+          Keyword.put(opts, :radius_marks, radius_marks)
+
+        _marks ->
+          opts
+      end
+
+    grid_layers = polar_angle_layers(opts)
+    radius_layers = polar_radius_layers(opts)
+    data_layers = polar_plot_data_layers(data, opts)
+
+    vl
+    |> Vl.data_from_values(%{_r: [1]})
+    |> Vl.layers(grid_layers ++ radius_layers ++ data_layers)
+  end
+
+  defp deg_to_rad(angle), do: angle * :math.pi() / 180
+
+  defp polar_angle_layers(opts) do
+    angle_marks_input = opts[:angle_marks]
+    theta_offset = opts[:theta_offset]
+
+    {angle_marks, angle_marks2, theta_offset} =
+      case opts[:direction] do
+        :clockwise ->
+          angle_marks = [0 | Enum.sort(angle_marks_input)]
+          angle_marks2 = tl(angle_marks) ++ [360]
+
+          {angle_marks, angle_marks2, theta_offset + 90}
+
+        :counter_clockwise ->
+          angle_marks = [360 | Enum.sort(angle_marks_input, :desc)]
+          angle_marks2 = tl(angle_marks) ++ [0]
+
+          {Enum.map(angle_marks, &(-&1)), Enum.map(angle_marks2, &(-&1)), -theta_offset + 90}
+      end
+
+    has_zero = 0 in angle_marks_input
+
+    [angle_marks, angle_marks2]
+    |> Enum.zip_with(fn [t, t2] ->
+      is_360 = :math.fmod(t, 360) == 0
+
+      label =
+        if (t != 0 and not is_360) or (t == 0 and has_zero) or
+             (is_360 and not has_zero) do
+          Vl.new()
+          |> Vl.mark(:text,
+            text: to_string(abs(t)) <> "º",
+            theta: "#{deg_to_rad(t + theta_offset)}",
+            radius: [expr: "min(width, height) * 0.55"]
+          )
+        else
+          []
+        end
+
+      theta = deg_to_rad(t + theta_offset)
+      theta2 = deg_to_rad(t2 + theta_offset)
+
+      [
+        Vl.new()
+        |> Vl.mark(:arc,
+          theta: "#{theta}",
+          theta2: "#{theta2}",
+          stroke: opts[:grid_stroke_color],
+          stroke_opacity: opts[:grid_stroke_opacity],
+          opacity: opts[:grid_opacity],
+          color: opts[:grid_color]
+        ),
+        label
+      ]
+    end)
+    |> List.flatten()
+  end
+
+  defp polar_radius_layers(opts) do
+    radius_marks = opts[:radius_marks]
+    max_radius = Enum.max(radius_marks)
+
+    radius_marks_vl =
+      Enum.map(radius_marks, fn r ->
+        Vl.mark(Vl.new(), :arc,
+          radius: [expr: "#{r / max_radius} * min(width, height)/2"],
+          radius2: [expr: "#{r / max_radius} * min(width, height)/2 + 1"],
+          theta: "0",
+          theta2: "#{2 * :math.pi()}",
+          stroke_color: opts[:grid_stroke_color],
+          color: opts[:grid_stroke_color],
+          opacity: opts[:grid_stroke_opacity]
+        )
+      end)
+
+    radius_ruler_vl = [
+      Vl.new()
+      |> Vl.data_from_values(%{
+        r: radius_marks,
+        theta: Enum.map(radius_marks, fn _ -> :math.pi() / 4 end)
+      })
+      |> Vl.mark(:text,
+        color: opts[:grid_stroke_color],
+        radius: [expr: "datum.r  * min(width, height) / (2 * #{max_radius})"],
+        theta: :math.pi() / 2,
+        dy: 10,
+        dx: -10
+      )
+      |> Vl.encode_field(:text, "r", type: :quantitative)
+    ]
+
+    radius_marks_vl ++ radius_ruler_vl
+  end
+
+  defp polar_infer_radius_marks(data) do
+    {min_r, max_r} =
+      data
+      |> Enum.flat_map(fn {data, _mark, _opts} ->
+        Enum.uniq(data["r"])
+      end)
+      |> Enum.min_max()
+
+    min_r = floor(min_r)
+    max_r = ceil(max_r)
+
+    range = min_r..(max_r + rem(max_r - min_r, 2))//2
+
+    Enum.to_list(range)
+  end
+
+  defp polar_plot_data_layers(data, opts) do
+    pi = :math.pi()
+    legend_key = opts[:legend_key]
+
+    {x_sign, y_sign} = if opts[:direction] == :counter_clockwise, do: {"-", "+"}, else: {"+", "-"}
+
+    rotation = deg_to_rad(opts[:theta_offset])
+
+    radius_marks = opts[:radius_marks]
+    max_radius = Enum.max(radius_marks)
+
+    for {data, mark, mark_opts} <- data do
+      x_formula =
+        "datum.x_linear * cos(#{rotation}) #{x_sign}datum.y_linear * sin(#{rotation})"
+
+      y_formula =
+        "#{y_sign}datum.x_linear * sin(#{rotation}) + datum.y_linear * cos(#{rotation})"
+
+      Vl.new()
+      |> Vl.data_from_values(data)
+      |> Vl.transform(calculate: "datum.r * cos(datum.theta * #{pi / 180})", as: "x_linear")
+      |> Vl.transform(
+        calculate: "datum.r * sin(#{y_sign}datum.theta * #{pi / 180})",
+        as: "y_linear"
+      )
+      |> Vl.transform(calculate: x_formula, as: "x")
+      |> Vl.transform(calculate: y_formula, as: "y")
+      |> Vl.mark(mark, mark_opts)
+      |> then(fn vl ->
+        if legend_key do
+          Vl.encode_field(vl, :color, legend_key, type: :nominal, scale: [scheme: opts[:scheme]])
+        else
+          vl
+        end
+      end)
+      |> then(fn vl ->
+        if Map.has_key?(data, "stroke_dash") or Map.has_key?(data, :stroke_dash) do
+          Vl.encode_field(vl, :stroke_dash, "stroke_dash", type: :quantitative)
+        else
+          vl
+        end
+      end)
+      |> Vl.encode_field(:x, "x",
+        type: :quantitative,
+        scale: [
+          domain: [-max_radius, max_radius]
+        ],
+        axis: [
+          grid: false,
+          ticks: false,
+          domain_opacity: 0,
+          labels: false,
+          title: false,
+          domain: false,
+          offset: 50
+        ]
+      )
+      |> Vl.encode_field(:y, "y",
+        type: :quantitative,
+        scale: [
+          domain: [-max_radius, max_radius]
+        ],
+        axis: [
+          grid: false,
+          ticks: false,
+          domain_opacity: 0,
+          labels: false,
+          title: false,
+          domain: false,
+          offset: 50
+        ]
+      )
+      |> Vl.encode_field(:order, "theta")
+      |> Vl.encode(
+        :tooltip,
+        Enum.map(data, fn
+          {^legend_key, _} ->
+            [field: to_string(legend_key), type: :nominal]
+
+          {field, _} ->
+            [field: to_string(field), type: :quantitative]
+        end)
+      )
+    end
+  end
+
   ## Infer types
 
   @doc """
