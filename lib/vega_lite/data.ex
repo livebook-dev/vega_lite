@@ -403,42 +403,58 @@ defmodule VegaLite.Data do
         legend_key: legend_key
       )
   """
-  def polar_plot(vl \\ Vl.new(), data, fields, opts \\ []) do
+  def polar_grid(vl \\ Vl.new(), opts \\ []) do
     opts =
       Keyword.validate!(
         opts,
         [
           :radius_marks,
-          :mark,
-          mark_opts: [],
-          return_grid: true,
-          direction: :counter_clockwise,
           angle_marks: [0, 90, 180, 270, 360],
+          direction: :counter_clockwise,
           angle_offset: 0,
-          grid_opacity: 1,
-          grid_color: "white",
-          grid_stroke_color: "black",
-          grid_stroke_opacity: 1,
-          scheme: "turbo"
+          opacity: 1,
+          color: "white",
+          stroke_color: "black",
+          stroke_opacity: 1
         ]
       )
 
-    data_layer = polar_plot_data_layers(data, fields, opts[:mark], opts[:mark_opts], opts)
+    unless opts[:radius_marks] do
+      raise ArgumentError, "missing :radius_marks option"
+    end
 
-    if opts[:return_grid] do
-      unless opts[:radius_marks] do
-        raise ArgumentError, "missing :radius_marks option"
+    grid_layers = polar_angle_layers(opts)
+    radius_layers = polar_radius_layers(opts)
+
+    vl = append_layers(vl |> Vl.data_from_values(%{"_r" => [0]}), grid_layers ++ radius_layers)
+
+    put_in(
+      vl.spec["_vl_polar_config"],
+      opts
+      |> Keyword.take([:radius_marks, :angle_offset, :direction])
+      |> Map.new()
+    )
+  end
+
+  def polar_plot(vl \\ Vl.new(), data, mark, fields, opts \\ []) do
+    opts = Keyword.validate!(opts, scheme: "turbo", hide_axes: false)
+
+    vl_polar_config =
+      case vl.spec do
+        %{"_vl_polar_config" => conf} -> Enum.to_list(conf)
+        _ -> [radius_marks: [1, 2, 3, 4, 5], angle_offset: 0, direction: :counter_clockwise]
       end
 
-      grid_layers = polar_angle_layers(opts)
-      radius_layers = polar_radius_layers(opts)
+    data_layer =
+      polar_plot_data_layers(
+        data,
+        fields,
+        mark[:type],
+        Keyword.delete(mark, :type),
+        vl_polar_config ++ opts
+      )
 
-      vl
-      |> Vl.data_from_values(%{_r: [1]})
-      |> append_layers(grid_layers ++ radius_layers ++ [data_layer])
-    else
-      append_layers(vl, [data_layer])
-    end
+    append_layers(vl, [data_layer])
   end
 
   defp append_layers(vl, layers) do
@@ -497,10 +513,10 @@ defmodule VegaLite.Data do
         |> Vl.mark(:arc,
           theta: "#{theta}",
           theta2: "#{theta2}",
-          stroke: opts[:grid_stroke_color],
-          stroke_opacity: opts[:grid_stroke_opacity],
-          opacity: opts[:grid_opacity],
-          color: opts[:grid_color]
+          stroke: opts[:stroke_color],
+          stroke_opacity: opts[:stroke_opacity],
+          opacity: opts[:opacity],
+          color: opts[:color]
         ),
         label
       ]
@@ -519,9 +535,9 @@ defmodule VegaLite.Data do
           radius2: [expr: "#{r / max_radius} * min(width, height)/2 + 1"],
           theta: "0",
           theta2: "#{2 * :math.pi()}",
-          stroke_color: opts[:grid_stroke_color],
-          color: opts[:grid_stroke_color],
-          opacity: opts[:grid_stroke_opacity]
+          stroke_color: opts[:stroke_color],
+          color: opts[:stroke_color],
+          opacity: opts[:stroke_opacity]
         )
       end)
 
@@ -532,7 +548,7 @@ defmodule VegaLite.Data do
         theta: Enum.map(radius_marks, fn _ -> :math.pi() / 4 end)
       })
       |> Vl.mark(:text,
-        color: opts[:grid_stroke_color],
+        color: opts[:stroke_color],
         radius: [expr: "datum.r  * min(width, height) / (2 * #{max_radius})"],
         theta: :math.pi() / 2,
         dy: 10,
@@ -564,6 +580,26 @@ defmodule VegaLite.Data do
     r = fields[:r]
     theta = fields[:theta]
 
+    hide_axes =
+      if opts[:hide_axes] do
+        [
+          scale: [
+            domain: [-max_radius, max_radius]
+          ],
+          axis: [
+            grid: false,
+            ticks: false,
+            domain_opacity: 0,
+            labels: false,
+            title: false,
+            domain: false,
+            offset: 50
+          ]
+        ]
+      else
+        []
+      end
+
     Vl.new()
     |> Vl.data_from_values(data)
     |> Vl.transform(calculate: "datum.#{r} * cos(datum.#{theta} * #{pi / 180})", as: "x_linear")
@@ -581,35 +617,8 @@ defmodule VegaLite.Data do
         vl
       end
     end)
-    |> Vl.encode(:x, field: "x", type: :quantitative,
-      scale: [
-        domain: [-max_radius, max_radius]
-      ],
-      axis: [
-        grid: false,
-        ticks: false,
-        domain_opacity: 0,
-        labels: false,
-        title: false,
-        domain: false,
-        offset: 50
-      ]
-    )
-    |> Vl.encode_field(:y, "y",
-      type: :quantitative,
-      scale: [
-        domain: [-max_radius, max_radius]
-      ],
-      axis: [
-        grid: false,
-        ticks: false,
-        domain_opacity: 0,
-        labels: false,
-        title: false,
-        domain: false,
-        offset: 50
-      ]
-    )
+    |> Vl.encode_field(:x, "x", [type: :quantitative] ++ hide_axes)
+    |> Vl.encode_field(:y, "y", [type: :quantitative] ++ hide_axes)
     |> Vl.encode_field(:order, "theta")
     |> Vl.encode(
       :tooltip,
