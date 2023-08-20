@@ -328,54 +328,113 @@ defmodule VegaLite.Data do
   end
 
   @doc """
-  Returns the specification of a polar plot of the input data.
+  Returns the specification of a polar plot grid.
 
-  `data` must be a list containing one of the following kinds of tuple:
+  The returned specification contains extra config that's passed
+  through to `polar_plot/4` for easier composability.
 
-    * `{data points, mark type}`
-    * `{data points, mark type, mark opts}`
-
-  Where the tuple entries are:
-
-    * `data points` - a map of VegaLite data containing the keys `%{"r" => ..., "theta" => ...}` and an optional key
-      that can have any value that will be accessed by the value given in the `:legend_key` option.
-    * `mark type` - a valid mark to be passed into `VegaLite.mark/3`
-    * `mark opts` - a keyword to be passed into `VegaLite.mark/3`
+  See also: `polar_plot/4`
 
   ## Options
 
-    * `:radius_marks` - optional list of values for the radius markings. If not passed,
-      will be inferred from the given data points.
-    * `:legend_key` - optional string for accessing `data points` for grouping in the plot legend.
+    * `:radius_marks` - optional list of values for the radius markings.
     * `:direction` - one of `:counter_clockwise` or `:clockwise`, which will affect the direction
       in which the angles grow from the starting point. Defaults to `:counter_clockwise`.
     * `:angle_marks` - list of angles for marking the grid. Defaults to `Enum.to_list(0..360//90)`.
     * `:angle_offset` - offset for the 0º reference. The sign will obey the `:direction` option. Defaults to `0`.
-    * `:grid_opacity` - opacity of the grid. Defaults to `1`.
-    * `:grid_color` - backround color for the grid. Defaults to `"white"`.
-    * `:grid_stroke_color` - stroke color for the grid markings. Defaults to `"black"`.
-    * `:grid_stroke_opacity` - opacity for the grid strokes. Defaults to `1`.
-    * `:scheme` - the color scheme for multi-line plots. Defaults to `"turbo"`
+    * `:opacity` - opacity of the grid. Defaults to `1`.
+    * `:color` - backround color for the grid. Defaults to `"white"`.
+    * `:stroke_color` - stroke color for the grid markings. Defaults to `"black"`.
+    * `:stroke_opacity` - opacity for the grid strokes. Defaults to `1`.
 
   ## Examples
 
-  In the example below, we plot a dataset by specifying stylized point marks and connecting it with
-  an interpolated line.
+  This first call will plot the grid using all default options.
 
-      data = %{"r" => [1, 2, 3, 3, 4], "theta" => [0, 30, 45, 135, 270]}
+      VegaLite.Data.polar_grid([0, 1, 2, 3, 4, 5])
 
-      VegaLite.Data.polar_plot(
-        VegaLite.new(title: "Polar Plot", height: 500, width: 500),
-        [
-          {data, :point, [stroke: "white", stroke_width: 3, tooltip: [data: true]]},
-          {data, :line, point: true, interpolate: "cardinal", color: "black", tooltip: [data: true]}
-        ],
-        angle_marks: [0, 15, 30, 45, 60, 90, 180, 270, 360],
-        radius_marks: [0, 1, 2, 3, 4, 5]
+  The second call is a more customized example, with custom angle offset, direction
+  and angle markings:
+
+      vl = VegaLite.new(title: "Polars", width: 500, height: 500)
+      VegaLite.Data.polar_grid(vl, [0, 1, 2, 3, 4, 5], angle_offset: -90, direction: :clockwise)
+  """
+  def polar_grid(radius_marks, opts \\ []), do: polar_grid(Vl.new(), radius_marks, opts)
+
+  def polar_grid(vl, radius_marks, opts) do
+    opts =
+      Keyword.validate!(
+        opts,
+        angle_marks: [0, 90, 180, 270, 360],
+        direction: :counter_clockwise,
+        angle_offset: 0,
+        opacity: 1,
+        color: "white",
+        stroke_color: "black",
+        stroke_opacity: 1
       )
 
-  In the next example, we add a second line to the plot grouping by the `:legend_key`.
-  Note that the `:legend_key` will also be the legend title, so a readable name is desirable.
+    grid_layers = polar_angle_layers(opts)
+    radius_layers = polar_radius_layers(radius_marks, opts)
+
+    vl = append_layers(vl |> Vl.data_from_values(%{"_r" => [0]}), grid_layers ++ radius_layers)
+
+    put_in(
+      vl.spec["_vl_polar_config"],
+      opts
+      |> Keyword.take([:angle_offset, :direction])
+      |> Map.new()
+      |> Map.put(:radius_marks, radius_marks)
+      |> Map.put(:hide_axes, true)
+    )
+  end
+
+  @doc """
+  Receives data represented in the polar domain and plots it into a grid.
+
+  By default, the grid will be the usual cartesian grid, with the data converted
+  into rectangular coordinates. If the given `VegaLite` spec was generated through
+  `VegaLite.Data.polar_grid/3`, the cartesian grid will be hidden by default such
+  that the resulting plot is purely in the polar domain.
+
+  `data` contains data inside a container which supports the `Table.Reader` protocol.
+
+  `mark` is either an atom for the mark type (usually `:point` or `:line`) or a keyword
+  list containing the `:type` key specifying the mark type and any options for the mark.
+
+  The `fields` argument must contain specifications for the `:r` and `:theta`,
+  mapping them onto keys contained in `data`.
+
+  It may also contain the following meta-fields:
+
+    * `:x` - options for the x-axis
+    * `:y` - options for the y-axis
+    * `:legend` - the key which contains the legend field for grouping multiple plots.
+
+  ## Examples
+
+  In this first example, we plot a standalone cartesian plot.
+  Note that we're configuring the X and Y axes of the plot through the `fields` argument.
+
+      data = %{
+        "r" => [1, 2, 3, 3, 4],
+        "theta" => [0, 30, 45, 135, 270],
+        "Group" => List.duplicate("First Line", 5)
+      }
+
+      VegaLite.Data.polar_plot(
+        VegaLite.new(height: 500, width: 500),
+        data,
+        [type: :line, point: true, interpolate: :cardinal, color: "black"],
+        r: "r",
+        theta: "theta",
+        x: [scale: [domain: [-5, 5]]],
+        y: [scale: [domain: [-10, 3]]],
+        legend: "Group"
+      )
+
+  In this second example, we plot data onto a polar grid. Note that we include include the points
+  as separate layers for more customization.
 
       legend_key = "Line Groups"
 
@@ -391,67 +450,37 @@ defmodule VegaLite.Data do
         legend_key => List.duplicate("Second Line", 5)
       }
 
-      VegaLite.Data.polar_plot(
-        VegaLite.new(title: "Polar Plot", height: 500, width: 500),
-        [
-          {data, :point, [stroke: "black", stroke_width: 3]},
-          {data, :line, point: true, interpolate: "cardinal"},
-          {other_data, :point, [stroke: "black", stroke_width: 3]},
-          {other_data, :line, point: true, interpolate: "cardinal"}
-        ],
-        angle_marks: [0, 15, 30, 45, 60, 90, 180, 270, 360],
-        legend_key: legend_key
-      )
+      list = [
+        {data, type: :line, point: true, interpolate: "cardinal"},
+        {data, :point},
+        {other_data, type: :line, point: true, interpolate: "cardinal"},
+        {other_data, type: :point, stroke: "black", stroke_width: 2, size: 100, shape: "triangle"}
+      ]
+
+      vl = VegaLite.new(title: "Polar Plot", height: 500, width: 500)
+      vl_grid =  VegaLite.Data.polar_grid(vl, [0, 1, 2, 3, 4, 5, 7], angle_marks: [0, 15, 30, 45, 60, 90, 180, 270, 360])
+
+      for {data, mark} <- list, reduce: vl_grid do
+        v ->
+          VegaLite.Data.polar_plot(v, data, mark, r: "r", theta: "theta", legend: legend_key)
+      end
   """
-  def polar_grid(vl \\ Vl.new(), opts \\ []) do
-    opts =
-      Keyword.validate!(
-        opts,
-        [
-          :radius_marks,
-          angle_marks: [0, 90, 180, 270, 360],
-          direction: :counter_clockwise,
-          angle_offset: 0,
-          opacity: 1,
-          color: "white",
-          stroke_color: "black",
-          stroke_opacity: 1
-        ]
-      )
-
-    unless opts[:radius_marks] do
-      raise ArgumentError, "missing :radius_marks option"
-    end
-
-    grid_layers = polar_angle_layers(opts)
-    radius_layers = polar_radius_layers(opts)
-
-    vl = append_layers(vl |> Vl.data_from_values(%{"_r" => [0]}), grid_layers ++ radius_layers)
-
-    put_in(
-      vl.spec["_vl_polar_config"],
-      opts
-      |> Keyword.take([:radius_marks, :angle_offset, :direction])
-      |> Map.new()
-    )
-  end
-
-  def polar_plot(vl \\ Vl.new(), data, mark, fields, opts \\ []) do
-    opts = Keyword.validate!(opts, scheme: "turbo", hide_axes: false)
-
+  def polar_plot(vl \\ Vl.new(), data, mark, fields) do
     vl_polar_config =
       case vl.spec do
-        %{"_vl_polar_config" => conf} -> Enum.to_list(conf)
-        _ -> [radius_marks: [1, 2, 3, 4, 5], angle_offset: 0, direction: :counter_clockwise]
+        %{"_vl_polar_config" => conf} ->
+          Enum.to_list(conf)
+
+        _ ->
+          [radius_marks: nil, angle_offset: 0, direction: :counter_clockwise]
       end
 
     data_layer =
       polar_plot_data_layers(
         data,
+        mark,
         fields,
-        mark[:type],
-        Keyword.delete(mark, :type),
-        vl_polar_config ++ opts
+        vl_polar_config
       )
 
     append_layers(vl, [data_layer])
@@ -524,8 +553,7 @@ defmodule VegaLite.Data do
     |> List.flatten()
   end
 
-  defp polar_radius_layers(opts) do
-    radius_marks = opts[:radius_marks]
+  defp polar_radius_layers(radius_marks, opts) do
     max_radius = Enum.max(radius_marks)
 
     radius_marks_vl =
@@ -560,7 +588,7 @@ defmodule VegaLite.Data do
     radius_marks_vl ++ radius_ruler_vl
   end
 
-  defp polar_plot_data_layers(data, fields, mark, mark_opts, opts) do
+  defp polar_plot_data_layers(data, mark, fields, opts) do
     pi = :math.pi()
     legend_key = fields[:legend]
 
@@ -568,20 +596,28 @@ defmodule VegaLite.Data do
 
     rotation = deg_to_rad(opts[:angle_offset])
 
-    radius_marks = opts[:radius_marks]
-    max_radius = Enum.max(radius_marks)
-
     x_formula =
       "datum.x_linear * cos(#{rotation}) #{x_sign}datum.y_linear * sin(#{rotation})"
 
     y_formula =
       "#{y_sign}datum.x_linear * sin(#{rotation}) + datum.y_linear * cos(#{rotation})"
 
-    r = fields[:r]
-    theta = fields[:theta]
+    r =
+      case fields[:r] do
+        opts when is_list(opts) -> opts[:field]
+        field when is_binary(field) -> field
+      end
 
-    hide_axes =
-      if opts[:hide_axes] do
+    theta =
+      case fields[:theta] do
+        opts when is_list(opts) -> opts[:field]
+        field when is_binary(field) -> field
+      end
+
+    auto_field_opts =
+      if radius_marks = opts[:radius_marks] do
+        max_radius = Enum.max(radius_marks)
+
         [
           scale: [
             domain: [-max_radius, max_radius]
@@ -600,28 +636,19 @@ defmodule VegaLite.Data do
         []
       end
 
-    Vl.new()
-    |> Vl.data_from_values(data)
-    |> Vl.transform(calculate: "datum.#{r} * cos(datum.#{theta} * #{pi / 180})", as: "x_linear")
-    |> Vl.transform(
-      calculate: "datum.#{r} * sin(#{y_sign}datum.#{theta} * #{pi / 180})",
-      as: "y_linear"
-    )
-    |> Vl.transform(calculate: x_formula, as: "x")
-    |> Vl.transform(calculate: y_formula, as: "y")
-    |> Vl.mark(mark, mark_opts)
-    |> then(fn vl ->
-      if legend_key do
-        Vl.encode_field(vl, :color, legend_key, type: :nominal, scale: [scheme: opts[:scheme]])
+    get_field_opts = fn field ->
+      if opts[:hide_axes] do
+        [type: :quantitative]
+        |> Keyword.merge(fields[field] || [])
+        |> Keyword.merge(auto_field_opts)
       else
-        vl
+        Keyword.merge([type: :quantitative], fields[field] || [])
       end
-    end)
-    |> Vl.encode_field(:x, "x", [type: :quantitative] ++ hide_axes)
-    |> Vl.encode_field(:y, "y", [type: :quantitative] ++ hide_axes)
-    |> Vl.encode_field(:order, "theta")
-    |> Vl.encode(
-      :tooltip,
+    end
+
+    data_fields = if legend_key, do: [r, theta, legend_key], else: [r, theta]
+
+    auto_tooltip =
       Enum.map(data, fn
         {^legend_key, _} ->
           [field: to_string(legend_key), type: :nominal]
@@ -629,7 +656,41 @@ defmodule VegaLite.Data do
         {field, _} ->
           [field: to_string(field), type: :quantitative]
       end)
+
+    x_opts = get_field_opts.(:x)
+    y_opts = get_field_opts.(:y)
+
+    tooltip =
+      if opts[:radius_marks] do
+        auto_tooltip
+      else
+        auto_tooltip ++ [[field: "x", type: x_opts[:type]], [field: "y", type: y_opts[:type]]]
+      end
+
+    Vl.new()
+    |> Vl.data_from_values(data, only: data_fields)
+    |> Vl.transform(calculate: "datum.#{r} * cos(datum.#{theta} * #{pi / 180})", as: "x_linear")
+    |> Vl.transform(
+      calculate: "datum.#{r} * sin(#{y_sign}datum.#{theta} * #{pi / 180})",
+      as: "y_linear"
     )
+    |> Vl.transform(calculate: x_formula, as: "x")
+    |> Vl.transform(calculate: y_formula, as: "y")
+    |> encode_mark(mark)
+    |> then(fn vl ->
+      if legend_key do
+        Vl.encode_field(vl, :color, legend_key,
+          type: :nominal,
+          scale: Keyword.take(opts, [:scheme])
+        )
+      else
+        vl
+      end
+    end)
+    |> Vl.encode_field(:x, "x", x_opts)
+    |> Vl.encode_field(:y, "y", y_opts)
+    |> Vl.encode_field(:order, "theta")
+    |> Vl.encode(:tooltip, tooltip)
   end
 
   ## Infer types
