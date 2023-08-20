@@ -382,10 +382,102 @@ defmodule VegaLite.Data do
     put_in(
       vl.spec["_vl_polar_config"],
       opts
-      |> Keyword.take(opts, [:angle_offset, :direction])
-      |> Kernel.++([radius_marks: radius_marks, hide_axes: true])
+      |> Keyword.take([:angle_offset, :direction])
+      |> Kernel.++(radius_marks: radius_marks, hide_axes: true)
       |> Map.new()
     )
+  end
+
+  defp polar_angle_layers(opts) do
+    angle_marks_input = opts[:angle_marks]
+    angle_offset = opts[:angle_offset]
+
+    {angle_marks, angle_marks2, angle_offset} =
+      case opts[:direction] do
+        :clockwise ->
+          angle_marks = [0 | Enum.sort(angle_marks_input)]
+          angle_marks2 = tl(angle_marks) ++ [360]
+
+          {angle_marks, angle_marks2, angle_offset + 90}
+
+        :counter_clockwise ->
+          angle_marks = [360 | Enum.sort(angle_marks_input, :desc)]
+          angle_marks2 = tl(angle_marks) ++ [0]
+
+          {Enum.map(angle_marks, &(-&1)), Enum.map(angle_marks2, &(-&1)), -angle_offset + 90}
+      end
+
+    has_zero = 0 in angle_marks_input
+
+    [angle_marks, angle_marks2]
+    |> Enum.zip_with(fn [t, t2] ->
+      is_360 = :math.fmod(t, 360) == 0
+
+      label =
+        if (t != 0 and not is_360) or (t == 0 and has_zero) or
+             (is_360 and not has_zero) do
+          Vl.new()
+          |> Vl.mark(:text,
+            text: to_string(abs(t)) <> "º",
+            theta: "#{deg_to_rad(t + angle_offset)}",
+            radius: [expr: "min(width, height) * 0.55"]
+          )
+        else
+          []
+        end
+
+      theta = deg_to_rad(t + angle_offset)
+      theta2 = deg_to_rad(t2 + angle_offset)
+
+      [
+        Vl.new()
+        |> Vl.mark(:arc,
+          theta: "#{theta}",
+          theta2: "#{theta2}",
+          stroke: opts[:stroke_color],
+          stroke_opacity: opts[:stroke_opacity],
+          opacity: opts[:opacity],
+          color: opts[:color]
+        ),
+        label
+      ]
+    end)
+    |> List.flatten()
+  end
+
+  defp polar_radius_layers(radius_marks, opts) do
+    max_radius = Enum.max(radius_marks)
+
+    radius_marks_vl =
+      Enum.map(radius_marks, fn r ->
+        Vl.mark(Vl.new(), :arc,
+          radius: [expr: "#{r / max_radius} * min(width, height)/2"],
+          radius2: [expr: "#{r / max_radius} * min(width, height)/2 + 1"],
+          theta: "0",
+          theta2: "#{2 * :math.pi()}",
+          stroke_color: opts[:stroke_color],
+          color: opts[:stroke_color],
+          opacity: opts[:stroke_opacity]
+        )
+      end)
+
+    radius_ruler_vl = [
+      Vl.new()
+      |> Vl.data_from_values(%{
+        r: radius_marks,
+        theta: Enum.map(radius_marks, fn _ -> :math.pi() / 4 end)
+      })
+      |> Vl.mark(:text,
+        color: opts[:stroke_color],
+        radius: [expr: "datum.r  * min(width, height) / (2 * #{max_radius})"],
+        theta: :math.pi() / 2,
+        dy: 10,
+        dx: -10
+      )
+      |> Vl.encode_field(:text, "r", type: :quantitative)
+    ]
+
+    radius_marks_vl ++ radius_ruler_vl
   end
 
   @doc """
@@ -495,98 +587,6 @@ defmodule VegaLite.Data do
   end
 
   defp deg_to_rad(angle), do: angle * :math.pi() / 180
-
-  defp polar_angle_layers(opts) do
-    angle_marks_input = opts[:angle_marks]
-    angle_offset = opts[:angle_offset]
-
-    {angle_marks, angle_marks2, angle_offset} =
-      case opts[:direction] do
-        :clockwise ->
-          angle_marks = [0 | Enum.sort(angle_marks_input)]
-          angle_marks2 = tl(angle_marks) ++ [360]
-
-          {angle_marks, angle_marks2, angle_offset + 90}
-
-        :counter_clockwise ->
-          angle_marks = [360 | Enum.sort(angle_marks_input, :desc)]
-          angle_marks2 = tl(angle_marks) ++ [0]
-
-          {Enum.map(angle_marks, &(-&1)), Enum.map(angle_marks2, &(-&1)), -angle_offset + 90}
-      end
-
-    has_zero = 0 in angle_marks_input
-
-    [angle_marks, angle_marks2]
-    |> Enum.zip_with(fn [t, t2] ->
-      is_360 = :math.fmod(t, 360) == 0
-
-      label =
-        if (t != 0 and not is_360) or (t == 0 and has_zero) or
-             (is_360 and not has_zero) do
-          Vl.new()
-          |> Vl.mark(:text,
-            text: to_string(abs(t)) <> "º",
-            theta: "#{deg_to_rad(t + angle_offset)}",
-            radius: [expr: "min(width, height) * 0.55"]
-          )
-        else
-          []
-        end
-
-      theta = deg_to_rad(t + angle_offset)
-      theta2 = deg_to_rad(t2 + angle_offset)
-
-      [
-        Vl.new()
-        |> Vl.mark(:arc,
-          theta: "#{theta}",
-          theta2: "#{theta2}",
-          stroke: opts[:stroke_color],
-          stroke_opacity: opts[:stroke_opacity],
-          opacity: opts[:opacity],
-          color: opts[:color]
-        ),
-        label
-      ]
-    end)
-    |> List.flatten()
-  end
-
-  defp polar_radius_layers(radius_marks, opts) do
-    max_radius = Enum.max(radius_marks)
-
-    radius_marks_vl =
-      Enum.map(radius_marks, fn r ->
-        Vl.mark(Vl.new(), :arc,
-          radius: [expr: "#{r / max_radius} * min(width, height)/2"],
-          radius2: [expr: "#{r / max_radius} * min(width, height)/2 + 1"],
-          theta: "0",
-          theta2: "#{2 * :math.pi()}",
-          stroke_color: opts[:stroke_color],
-          color: opts[:stroke_color],
-          opacity: opts[:stroke_opacity]
-        )
-      end)
-
-    radius_ruler_vl = [
-      Vl.new()
-      |> Vl.data_from_values(%{
-        r: radius_marks,
-        theta: Enum.map(radius_marks, fn _ -> :math.pi() / 4 end)
-      })
-      |> Vl.mark(:text,
-        color: opts[:stroke_color],
-        radius: [expr: "datum.r  * min(width, height) / (2 * #{max_radius})"],
-        theta: :math.pi() / 2,
-        dy: 10,
-        dx: -10
-      )
-      |> Vl.encode_field(:text, "r", type: :quantitative)
-    ]
-
-    radius_marks_vl ++ radius_ruler_vl
-  end
 
   defp polar_plot_data_layers(data, mark, fields, opts) do
     pi = :math.pi()
