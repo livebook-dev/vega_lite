@@ -382,10 +382,9 @@ defmodule VegaLite.Data do
     put_in(
       vl.spec["_vl_polar_config"],
       opts
-      |> Keyword.take([:angle_offset, :direction])
+      |> Keyword.take(opts, [:angle_offset, :direction])
+      |> Kernel.++([radius_marks: radius_marks, hide_axes: true])
       |> Map.new()
-      |> Map.put(:radius_marks, radius_marks)
-      |> Map.put(:hide_axes, true)
     )
   end
 
