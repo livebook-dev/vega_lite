@@ -592,14 +592,13 @@ defmodule VegaLite.Data do
   defp polar_plot_data_layers(data, mark, fields, opts) do
     pi = :math.pi()
 
-    color =
-      case fields[:color] do
-        nil -> []
-        s when is_binary(s) -> [field: s]
-        opts -> opts
-      end
+    fields = normalize_fields(fields)
 
+    color = fields[:color]
     color_key = color[:field]
+
+    r = fields[:r][:field]
+    theta = fields[:theta][:field]
 
     {x_sign, y_sign} = if opts[:direction] == :counter_clockwise, do: {"-", "+"}, else: {"+", "-"}
 
@@ -610,18 +609,6 @@ defmodule VegaLite.Data do
 
     y_formula =
       "#{y_sign}datum.x_linear * sin(#{rotation}) + datum.y_linear * cos(#{rotation})"
-
-    r =
-      case fields[:r] do
-        opts when is_list(opts) -> opts[:field]
-        field when is_binary(field) -> field
-      end
-
-    theta =
-      case fields[:theta] do
-        opts when is_list(opts) -> opts[:field]
-        field when is_binary(field) -> field
-      end
 
     auto_field_opts =
       if radius_marks = opts[:radius_marks] do
