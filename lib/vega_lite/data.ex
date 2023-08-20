@@ -496,36 +496,12 @@ defmodule VegaLite.Data do
   The `fields` argument must contain specifications for the `:r` and `:theta`,
   mapping them onto keys contained in `data`.
 
-  It may also contain the following meta-fields:
-
-    * `:x` - options for the x-axis
-    * `:y` - options for the y-axis
-    * `:color` - options for the color field. If given, the field specified will
-      be used as the grouping for the plot legend.
+  It may also contain the `:color` meta-field. If given, the field specified will
+  be used as the grouping for the plot legend.
 
   ## Examples
 
-  In this first example, we plot a standalone cartesian plot.
-  Note that we're configuring the X and Y axes of the plot through the `fields` argument.
-
-      data = %{
-        "r" => [1, 2, 3, 3, 4],
-        "theta" => [0, 30, 45, 135, 270],
-        "Group" => List.duplicate("First Line", 5)
-      }
-
-      VegaLite.Data.polar_plot(
-        VegaLite.new(height: 500, width: 500),
-        data,
-        [type: :line, point: true, interpolate: :cardinal, color: "black"],
-        r: "r",
-        theta: "theta",
-        x: [scale: [domain: [-5, 5]]],
-        y: [scale: [domain: [-10, 3]]],
-        color: "Group"
-      )
-
-  In this second example, we plot data onto a polar grid. Note that we include include the points
+  In this example, we plot data onto a polar grid. Note that we include include the points
   as separate layers for more customization.
 
       color_key = "Line Groups"
@@ -557,14 +533,15 @@ defmodule VegaLite.Data do
           VegaLite.Data.polar_plot(v, data, mark, r: "r", theta: "theta", color: color_key)
       end
   """
-  def polar_plot(vl \\ Vl.new(), data, mark, fields) do
+  def polar_plot(vl, data, mark, fields) do
     vl_polar_config =
       case vl.spec do
         %{"_vl_polar_config" => conf} ->
           Enum.to_list(conf)
 
         _ ->
-          [radius_marks: nil, angle_offset: 0, direction: :counter_clockwise]
+          raise ArgumentError,
+                "the given VegaLite spec must be generated from VegaLite.Data.polar_grid/3"
       end
 
     data_layer =
@@ -609,37 +586,24 @@ defmodule VegaLite.Data do
     y_formula =
       "#{y_sign}datum.x_linear * sin(#{rotation}) + datum.y_linear * cos(#{rotation})"
 
-    auto_field_opts =
-      if radius_marks = opts[:radius_marks] do
-        max_radius = Enum.max(radius_marks)
+    max_radius = Enum.max(opts[:radius_marks])
 
-        [
-          scale: [
-            domain: [-max_radius, max_radius]
-          ],
-          axis: [
-            grid: false,
-            ticks: false,
-            domain_opacity: 0,
-            labels: false,
-            title: false,
-            domain: false,
-            offset: 50
-          ]
+    calculated_field_opts =
+      [
+        type: :quantitative,
+        scale: [
+          domain: [-max_radius, max_radius]
+        ],
+        axis: [
+          grid: false,
+          ticks: false,
+          domain_opacity: 0,
+          labels: false,
+          title: false,
+          domain: false,
+          offset: 50
         ]
-      else
-        []
-      end
-
-    get_field_opts = fn field ->
-      if opts[:hide_axes] do
-        [type: :quantitative]
-        |> Keyword.merge(fields[field] || [])
-        |> Keyword.merge(auto_field_opts)
-      else
-        Keyword.merge([type: :quantitative], fields[field] || [])
-      end
-    end
+      ]
 
     data_fields = if color_key, do: [r, theta, color_key], else: [r, theta]
 
@@ -652,14 +616,11 @@ defmodule VegaLite.Data do
           [field: to_string(field), type: :quantitative]
       end)
 
-    x_opts = get_field_opts.(:x)
-    y_opts = get_field_opts.(:y)
-
     tooltip =
       if opts[:radius_marks] do
         auto_tooltip
       else
-        auto_tooltip ++ [[field: "x", type: x_opts[:type]], [field: "y", type: y_opts[:type]]]
+        auto_tooltip ++ [[field: "x", type: :quantitative], [field: "y", type: :quantitative]]
       end
 
     Vl.new()
@@ -682,8 +643,8 @@ defmodule VegaLite.Data do
         vl
       end
     end)
-    |> Vl.encode_field(:x, "x", x_opts)
-    |> Vl.encode_field(:y, "y", y_opts)
+    |> Vl.encode_field(:x, "x", calculated_field_opts)
+    |> Vl.encode_field(:y, "y", calculated_field_opts)
     |> Vl.encode_field(:order, "theta")
     |> Vl.encode(:tooltip, tooltip)
   end
