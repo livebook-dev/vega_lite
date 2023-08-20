@@ -409,7 +409,8 @@ defmodule VegaLite.Data do
 
     * `:x` - options for the x-axis
     * `:y` - options for the y-axis
-    * `:legend` - the key which contains the legend field for grouping multiple plots.
+    * `:color` - options for the color field. If given, the field specified will
+      be used as the grouping for the plot legend.
 
   ## Examples
 
@@ -430,24 +431,24 @@ defmodule VegaLite.Data do
         theta: "theta",
         x: [scale: [domain: [-5, 5]]],
         y: [scale: [domain: [-10, 3]]],
-        legend: "Group"
+        color: "Group"
       )
 
   In this second example, we plot data onto a polar grid. Note that we include include the points
   as separate layers for more customization.
 
-      legend_key = "Line Groups"
+      color_key = "Line Groups"
 
       data = %{
         "r" => [1, 2, 3, 3, 4],
         "theta" => [0, 30, 45, 135, 270],
-        legend_key => List.duplicate("First Line", 5)
+        color_key => List.duplicate("First Line", 5)
       }
 
       other_data = %{
         "r" => [8, 6, 4, 2, 0],
         "theta" => [0, 30, 60, 90, 120],
-        legend_key => List.duplicate("Second Line", 5)
+        color_key => List.duplicate("Second Line", 5)
       }
 
       list = [
@@ -462,7 +463,7 @@ defmodule VegaLite.Data do
 
       for {data, mark} <- list, reduce: vl_grid do
         v ->
-          VegaLite.Data.polar_plot(v, data, mark, r: "r", theta: "theta", legend: legend_key)
+          VegaLite.Data.polar_plot(v, data, mark, r: "r", theta: "theta", color: color_key)
       end
   """
   def polar_plot(vl \\ Vl.new(), data, mark, fields) do
@@ -590,7 +591,15 @@ defmodule VegaLite.Data do
 
   defp polar_plot_data_layers(data, mark, fields, opts) do
     pi = :math.pi()
-    legend_key = fields[:legend]
+
+    color =
+      case fields[:color] do
+        nil -> []
+        s when is_binary(s) -> [field: s]
+        opts -> opts
+      end
+
+    color_key = color[:field]
 
     {x_sign, y_sign} = if opts[:direction] == :counter_clockwise, do: {"-", "+"}, else: {"+", "-"}
 
@@ -646,12 +655,12 @@ defmodule VegaLite.Data do
       end
     end
 
-    data_fields = if legend_key, do: [r, theta, legend_key], else: [r, theta]
+    data_fields = if color_key, do: [r, theta, color_key], else: [r, theta]
 
     auto_tooltip =
       Enum.map(data, fn
-        {^legend_key, _} ->
-          [field: to_string(legend_key), type: :nominal]
+        {^color_key, _} ->
+          [field: to_string(color_key), type: :nominal]
 
         {field, _} ->
           [field: to_string(field), type: :quantitative]
@@ -678,10 +687,10 @@ defmodule VegaLite.Data do
     |> Vl.transform(calculate: y_formula, as: "y")
     |> encode_mark(mark)
     |> then(fn vl ->
-      if legend_key do
-        Vl.encode_field(vl, :color, legend_key,
+      if color_key do
+        Vl.encode_field(vl, :color, color_key,
           type: :nominal,
-          scale: Keyword.take(opts, [:scheme])
+          scale: Keyword.take(color, [:scheme])
         )
       else
         vl
