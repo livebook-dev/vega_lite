@@ -1151,5 +1151,13 @@ defmodule VegaLite.DataTest do
 
       assert expected == plot
     end
+
+    test "polar_plot raises if input vl is not polar" do
+      assert_raise ArgumentError,
+                   "the given VegaLite spec must be generated from VegaLite.Data.polar_grid/3",
+                   fn ->
+                     Data.polar_plot(Vl.new(), %{}, :point, [])
+                   end
+    end
   end
 end
