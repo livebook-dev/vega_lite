@@ -581,10 +581,18 @@ defmodule VegaLite.Data do
     rotation = deg_to_rad(opts[:angle_offset])
 
     x_formula =
-      "datum.x_linear * cos(#{rotation}) #{x_sign}datum.y_linear * sin(#{rotation})"
+      if :math.fmod(rotation, 360) == 0 do
+        "datum.x_linear"
+      else
+        "datum.x_linear * cos(#{rotation}) #{x_sign}datum.y_linear * sin(#{rotation})"
+      end
 
     y_formula =
-      "#{y_sign}datum.x_linear * sin(#{rotation}) + datum.y_linear * cos(#{rotation})"
+      if :math.fmod(rotation, 360) == 0 do
+        "datum.y_linear"
+      else
+        "#{y_sign}datum.x_linear * sin(#{rotation}) + datum.y_linear * cos(#{rotation})"
+      end
 
     max_radius = Enum.max(opts[:radius_marks])
 

@@ -957,4 +957,199 @@ defmodule VegaLite.DataTest do
       end
     end
   end
+
+  describe "polar" do
+    defp deg_to_rad(x), do: x * :math.pi() / 180
+
+    test "polar_grid+polar_plot" do
+      radius_marks = [1, 3, 5]
+      grid = Data.polar_grid(radius_marks)
+
+      angle_marks = [-360, -360, -270, -180, -90, 0]
+      angle_marks2 = [-360, -270, -180, -90, 0, 0]
+      angle_offset = 90
+
+      angle_layers =
+        Enum.zip_with([angle_marks, angle_marks2], fn [t, t2] ->
+          is_360 = :math.fmod(t, 360) == 0
+
+          label =
+            if (t != 0 and not is_360) or t == 0 do
+              Vl.new()
+              |> Vl.mark(:text,
+                text: to_string(abs(t)) <> "º",
+                theta: "#{deg_to_rad(t + angle_offset)}",
+                radius: [expr: "min(width, height) * 0.55"]
+              )
+            else
+              []
+            end
+
+          theta = deg_to_rad(t + angle_offset)
+          theta2 = deg_to_rad(t2 + angle_offset)
+
+          [
+            Vl.new()
+            |> Vl.mark(:arc,
+              theta: "#{theta}",
+              theta2: "#{theta2}",
+              stroke: "black",
+              stroke_opacity: 1,
+              opacity: 1,
+              color: "white"
+            ),
+            label
+          ]
+        end)
+
+      max_radius = Enum.max(radius_marks)
+
+      radius_marks_vl =
+        Enum.map(radius_marks, fn r ->
+          Vl.mark(Vl.new(), :arc,
+            radius: [expr: "#{r / max_radius} * min(width, height)/2"],
+            radius2: [expr: "#{r / max_radius} * min(width, height)/2 + 1"],
+            theta: "0",
+            theta2: "#{2 * :math.pi()}",
+            color: "black",
+            opacity: 1,
+            stroke_color: "black"
+          )
+        end)
+
+      radius_ruler_vl = [
+        Vl.new()
+        |> Vl.data_from_values(%{
+          r: radius_marks,
+          theta: Enum.map(radius_marks, fn _ -> :math.pi() / 4 end)
+        })
+        |> Vl.mark(:text,
+          radius: [expr: "datum.r  * min(width, height) / (2 * #{max_radius})"],
+          theta: :math.pi() / 2,
+          dy: 10,
+          dx: -10,
+          color: "black"
+        )
+        |> Vl.encode_field(:text, "r", type: :quantitative)
+      ]
+
+      layers =
+        angle_layers ++ radius_marks_vl ++ radius_ruler_vl
+
+      vl_polar_config = %{
+        direction: :counter_clockwise,
+        radius_marks: radius_marks,
+        angle_offset: 0,
+        hide_axes: true
+      }
+
+      expected =
+        Vl.new()
+        |> Vl.data_from_values(%{"_r" => [0]})
+        |> Vl.layers(List.flatten(layers))
+        |> put_in([Access.key(:spec), "_vl_polar_config"], vl_polar_config)
+
+      assert expected == grid
+
+      color_key = "Line Groups"
+
+      data = %{
+        "r" => [1, 2, 3],
+        "theta" => [0, 30, 45],
+        color_key => List.duplicate("First Line", 3)
+      }
+
+      list = [
+        {data, type: :line, point: true, interpolate: "cardinal"},
+        {data, :point}
+      ]
+
+      pi = :math.pi()
+
+      {plot, layers} =
+        for {data, mark} <- list, reduce: {grid, []} do
+          {v, layers} ->
+            r = "r"
+            theta = "theta"
+
+            x_formula = "datum.x_linear"
+            y_formula = "datum.y_linear"
+
+            calculated_field_opts =
+              [
+                type: :quantitative,
+                scale: [
+                  domain: [-max_radius, max_radius]
+                ],
+                axis: [
+                  grid: false,
+                  ticks: false,
+                  domain_opacity: 0,
+                  labels: false,
+                  title: false,
+                  domain: false,
+                  offset: 50
+                ]
+              ]
+
+            data_fields = [r, theta, color_key]
+
+            auto_tooltip =
+              Enum.map(data, fn
+                {^color_key, _} ->
+                  [field: to_string(color_key), type: :nominal]
+
+                {field, _} ->
+                  [field: to_string(field), type: :quantitative]
+              end)
+
+            tooltip = auto_tooltip
+
+            layer =
+              Vl.new()
+              |> Vl.data_from_values(data, only: data_fields)
+              |> Vl.transform(
+                calculate: "datum.r * cos(datum.theta * #{pi / 180})",
+                as: "x_linear"
+              )
+              |> Vl.transform(
+                calculate: "datum.r * sin(+datum.theta * #{pi / 180})",
+                as: "y_linear"
+              )
+              |> Vl.transform(calculate: x_formula, as: "x")
+              |> Vl.transform(calculate: y_formula, as: "y")
+              |> then(fn vl ->
+                if mark == :point do
+                  Vl.mark(vl, :point)
+                else
+                  {mark, opts} = Keyword.pop!(mark, :type)
+                  Vl.mark(vl, mark, opts)
+                end
+              end)
+              |> then(fn vl ->
+                Vl.encode_field(vl, :color, color_key,
+                  type: :nominal,
+                  scale: []
+                )
+              end)
+              |> Vl.encode_field(:x, "x", calculated_field_opts)
+              |> Vl.encode_field(:y, "y", calculated_field_opts)
+              |> Vl.encode_field(:order, "theta")
+              |> Vl.encode(:tooltip, tooltip)
+
+            v = VegaLite.Data.polar_plot(v, data, mark, r: "r", theta: "theta", color: color_key)
+
+            {v, [layer | layers]}
+        end
+
+      layers = Enum.reverse(layers) |> Enum.map(&(&1 |> Vl.to_spec() |> Map.delete("$schema")))
+
+      expected =
+        update_in(expected.spec, fn spec ->
+          Map.update(spec, "layer", layers, &(&1 ++ layers))
+        end)
+
+      assert expected == plot
+    end
+  end
 end
