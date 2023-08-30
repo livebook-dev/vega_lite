@@ -7,9 +7,10 @@ Elixir bindings to [Vega-Lite](https://vega.github.io/vega-lite).
 
 You can use it inside Livebook to plot graphics or in regular Elixir
 projects to save graphics to PNG, SVG, PDF, or render them using a
-webviewer.
+webviewer. [See the documentation](https://hexdocs.pm/vega_lite).
 
-[See the documentation](https://hexdocs.pm/vega_lite).
+For a higher-level plotting library, built on top of these bindings,
+see [Tucan](https://hexdocs.pm/tucan/).
 
 ## Installation
 
