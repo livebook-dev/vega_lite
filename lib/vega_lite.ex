@@ -689,6 +689,13 @@ defmodule VegaLite do
         |> ...
       ])
 
+    Parameters can also be specified using UI inputs, or computed based
+    on other parameters:
+
+      Vl.new()
+      |> Vl.param("height", value: 20, bind: [input: :range, min: 1, max: 100, step: 1])
+      |> Vl.param("halfHeight", expr: "height / 2")
+      |> ...
 
   See [the docs](https://vega.github.io/vega-lite/docs/parameter.html) for more details.
   """
