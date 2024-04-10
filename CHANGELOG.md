@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.1.9](https://github.com/livebook-dev/vega_lite/tree/v0.1.9) (2024-04-10)
+
+### Removed
+
+- `VegaLite.Data` specialized plots
+
+### Fixed
+
+- Prevent deprecation warnings from exporting an invalid image binary ([#77](https://github.com/livebook-dev/vega_lite/pull/77))
+
 ## [v0.1.8](https://github.com/livebook-dev/vega_lite/tree/v0.1.8) (2023-08-19)
 
 ### Added
