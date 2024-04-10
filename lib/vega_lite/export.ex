@@ -207,7 +207,7 @@ defmodule VegaLite.Export do
       {output, 0} ->
         output
 
-      {output, code} ->
+      {_output, code} ->
         raise RuntimeError, """
         #{fn_name} requires #{command} executable from the vega-lite npm package.
 
@@ -217,19 +217,15 @@ defmodule VegaLite.Export do
             # or in the current directory
             npm install vega vega-lite canvas
 
-        npm exec failed with (#{code}):
-
-        #{output}
+        npm exec failed with code #{code}. Errors have been logged to standard error
         """
     end
   end
 
   def run_cmd(script_path, args) do
-    opts = [stderr_to_stdout: true]
-
     case :os.type() do
-      {:win32, _} -> System.cmd("cmd", ["/C", script_path | args], opts)
-      {_, _} -> System.cmd(script_path, args, opts)
+      {:win32, _} -> System.cmd("cmd", ["/C", script_path | args])
+      {_, _} -> System.cmd(script_path, args)
     end
   end
 end
