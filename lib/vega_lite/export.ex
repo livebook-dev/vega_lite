@@ -98,9 +98,9 @@ defmodule VegaLite.Export do
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Vega-Lite graphic</title>
-      <script src="https://cdn.jsdelivr.net/npm/vega@5.21.0"></script>
-      <script src="https://cdn.jsdelivr.net/npm/vega-lite@5.2.0"></script>
-      <script src="https://cdn.jsdelivr.net/npm/vega-embed@6.20.5"></script>
+      <script src="https://cdn.jsdelivr.net/npm/vega@5.28.0"></script>
+      <script src="https://cdn.jsdelivr.net/npm/vega-lite@5.18.0"></script>
+      <script src="https://cdn.jsdelivr.net/npm/vega-embed@6.24.0"></script>
     </head>
     <body>
       <div id="graphic"></div>
