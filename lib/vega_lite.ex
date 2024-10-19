@@ -61,6 +61,11 @@ defmodule VegaLite do
   `param/3` for introducing interactivity and `config/2` for
   global customization.
 
+  > #### Option casing {: .info}
+  >
+  > Note that the specification uses snake-case instead of camel-case.
+  > See [Options](#module-options).
+
   ### Using JSON specification
 
   Alternatively you can parse a Vega-Lite JSON specification directly.
