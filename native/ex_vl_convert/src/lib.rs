@@ -1,8 +1,10 @@
 use rustler::Atom;
 use rustler::NifTuple;
 
+use vl_convert_rs::converter::VgOpts;
 use vl_convert_rs::converter::VlOpts;
-use vl_convert_rs::{VlConverter, VlVersion};
+use vl_convert_rs::VlConverter;
+use vl_convert_rs::VlVersion;
 
 // use webp::{Encoder, WebPMemory};
 
@@ -25,24 +27,43 @@ struct BinaryResultTuple {
     rhs: Vec<u8>,
 }
 
-fn ok_string_tuple(data: String) -> StringResultTuple {
-    return StringResultTuple {
-        lhs: atoms::ok(),
-        rhs: data,
+// +-------------------------------------+
+// |            Vega Functions           |
+// +-------------------------------------+
+
+#[rustler::nif(schedule = "DirtyCpu")]
+fn vega_to_svg(vega_spec: String) -> StringResultTuple {
+    let vl_spec: serde_json::Value = match serde_json::from_str(vega_spec.as_str()) {
+        Ok(spec) => spec,
+        Err(_err) => return error_tuple("Vega spec is not valid JSON".to_string()),
+    };
+
+    let mut converter = VlConverter::new();
+    let svg_result = futures::executor::block_on(converter.vega_to_svg(vl_spec, vg_opts()));
+
+    return match svg_result {
+        Ok(svg) => ok_string_tuple(svg),
+        Err(err) => error_tuple(err.to_string()),
     };
 }
 
-fn error_tuple(error: String) -> StringResultTuple {
-    return StringResultTuple {
-        lhs: atoms::error(),
-        rhs: error.to_string(),
-    };
-}
+// +-------------------------------------+
+// |          VegaLite Functions         |
+// +-------------------------------------+
 
-fn vl_opts() -> VlOpts {
-    return VlOpts {
-        vl_version: VlVersion::v5_20,
-        ..Default::default()
+#[rustler::nif(schedule = "DirtyCpu")]
+fn vegalite_to_svg(vega_lite_spec: String) -> StringResultTuple {
+    let vl_spec: serde_json::Value = match serde_json::from_str(vega_lite_spec.as_str()) {
+        Ok(spec) => spec,
+        Err(_err) => return error_tuple("VegaLite spec is not valid JSON".to_string()),
+    };
+
+    let mut converter = VlConverter::new();
+    let svg_result = futures::executor::block_on(converter.vegalite_to_svg(vl_spec, vl_opts()));
+
+    return match svg_result {
+        Ok(svg) => ok_string_tuple(svg),
+        Err(err) => error_tuple(err.to_string()),
     };
 }
 
@@ -106,22 +127,6 @@ fn vl_opts() -> VlOpts {
 //     };
 // }
 
-#[rustler::nif(schedule = "DirtyCpu")]
-fn vegalite_to_svg(vega_lite_spec: String) -> StringResultTuple {
-    let vl_spec: serde_json::Value = match serde_json::from_str(vega_lite_spec.as_str()) {
-        Ok(spec) => spec,
-        Err(_err) => return error_tuple("VegaLite spec is not valid JSON".to_string()),
-    };
-
-    let mut converter = VlConverter::new();
-    let svg_result = futures::executor::block_on(converter.vegalite_to_svg(vl_spec, vl_opts()));
-
-    return match svg_result {
-        Ok(svg) => ok_string_tuple(svg),
-        Err(err) => error_tuple(err.to_string()),
-    };
-}
-
 // #[rustler::nif(schedule = "DirtyCpu")]
 // fn to_webp(vega_lite_spec: String, version: String, scale: f32) -> BinaryResultTuple {
 //     let mut converter = VlConverter::new();
@@ -155,5 +160,36 @@ fn vegalite_to_svg(vega_lite_spec: String) -> StringResultTuple {
 //         rhs: Vec::from(&*webp),
 //     };
 // }
+
+// +-------------------------------------+
+// |          Helper Functions           |
+// +-------------------------------------+
+
+fn ok_string_tuple(data: String) -> StringResultTuple {
+    return StringResultTuple {
+        lhs: atoms::ok(),
+        rhs: data,
+    };
+}
+
+fn error_tuple(error: String) -> StringResultTuple {
+    return StringResultTuple {
+        lhs: atoms::error(),
+        rhs: error.to_string(),
+    };
+}
+
+fn vg_opts() -> VgOpts {
+    return VgOpts {
+        ..Default::default()
+    };
+}
+
+fn vl_opts() -> VlOpts {
+    return VlOpts {
+        vl_version: VlVersion::v5_20,
+        ..Default::default()
+    };
+}
 
 rustler::init!("Elixir.VegaLite.Native");
