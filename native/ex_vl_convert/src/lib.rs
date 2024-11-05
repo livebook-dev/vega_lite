@@ -67,6 +67,40 @@ fn vegalite_to_svg(vega_lite_spec: String) -> StringResultTuple {
     };
 }
 
+// +-------------------------------------+
+// |          Helper Functions           |
+// +-------------------------------------+
+
+fn ok_string_tuple(data: String) -> StringResultTuple {
+    return StringResultTuple {
+        lhs: atoms::ok(),
+        rhs: data,
+    };
+}
+
+fn error_tuple(error: String) -> StringResultTuple {
+    return StringResultTuple {
+        lhs: atoms::error(),
+        rhs: error.to_string(),
+    };
+}
+
+fn vg_opts() -> VgOpts {
+    return VgOpts {
+        ..Default::default()
+    };
+}
+
+fn vl_opts() -> VlOpts {
+    return VlOpts {
+        vl_version: VlVersion::v5_20,
+        ..Default::default()
+    };
+}
+
+rustler::init!("Elixir.VegaLite.Native");
+
+// TODO: Clean this up once things get migrated over
 // #[rustler::nif(schedule = "DirtyCpu")]
 // fn to_jpeg(vega_lite_spec: String, version: String, scale: f32) -> BinaryResultTuple {
 //     let mut converter = VlConverter::new();
@@ -160,36 +194,3 @@ fn vegalite_to_svg(vega_lite_spec: String) -> StringResultTuple {
 //         rhs: Vec::from(&*webp),
 //     };
 // }
-
-// +-------------------------------------+
-// |          Helper Functions           |
-// +-------------------------------------+
-
-fn ok_string_tuple(data: String) -> StringResultTuple {
-    return StringResultTuple {
-        lhs: atoms::ok(),
-        rhs: data,
-    };
-}
-
-fn error_tuple(error: String) -> StringResultTuple {
-    return StringResultTuple {
-        lhs: atoms::error(),
-        rhs: error.to_string(),
-    };
-}
-
-fn vg_opts() -> VgOpts {
-    return VgOpts {
-        ..Default::default()
-    };
-}
-
-fn vl_opts() -> VlOpts {
-    return VlOpts {
-        vl_version: VlVersion::v5_20,
-        ..Default::default()
-    };
-}
-
-rustler::init!("Elixir.VegaLite.Native");
