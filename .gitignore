@@ -24,3 +24,7 @@ vega_lite-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+# Rustler related files
+/native/ex_vl_convert/target
+/priv/native/*.so
