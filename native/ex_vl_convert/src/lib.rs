@@ -292,6 +292,21 @@ fn vegalite_to_pdf(vega_lite_spec: String) -> Either<BinaryResultTuple, StringRe
     };
 }
 
+#[rustler::nif(schedule = "DirtyCpu")]
+fn vegalite_to_vega(vega_lite_spec: String) -> StringResultTuple {
+    let vl_spec: serde_json::Value = match serde_json::from_str(vega_lite_spec.as_str()) {
+        Ok(spec) => spec,
+        Err(_err) => return error_tuple("VegaLite spec is not valid JSON".to_string()),
+    };
+
+    let mut converter = VlConverter::new();
+    let result = futures::executor::block_on(converter.vegalite_to_vega(vl_spec, vl_opts()));
+
+    return match result {
+        Ok(result) => ok_string_tuple(result.to_string()),
+        Err(err) => error_tuple(err.to_string()),
+    };
+}
 // +-------------------------------------+
 // |          Helper Functions           |
 // +-------------------------------------+

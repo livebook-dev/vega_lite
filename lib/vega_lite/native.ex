@@ -20,7 +20,6 @@ defmodule VegaLite.Native do
   def vega_to_pdf(_vg_json_spec), do: :erlang.nif_error(:nif_not_loaded)
   def vega_to_png(_vg_json_spec, _scale, _ppi), do: :erlang.nif_error(:nif_not_loaded)
   def vega_to_svg(_vg_json_spec), do: :erlang.nif_error(:nif_not_loaded)
-  # def vega_to_scenegraph(), do: :erlang.nif_error(:nif_not_loaded)
 
   # VegaLite related NIF functions
   def vegalite_to_html(_vg_json_spec, _bundle, _renderer), do: :erlang.nif_error(:nif_not_loaded)
@@ -28,8 +27,5 @@ defmodule VegaLite.Native do
   def vegalite_to_pdf(_vl_json_spec), do: :erlang.nif_error(:nif_not_loaded)
   def vegalite_to_png(_vl_json_spec, _scale, _ppi), do: :erlang.nif_error(:nif_not_loaded)
   def vegalite_to_svg(_vl_json_spec), do: :erlang.nif_error(:nif_not_loaded)
-  # def vegalite_to_scenegraph(), do: :erlang.nif_error(:nif_not_loaded)
-
-  # Conversion related NIF functions
-  # def vegalite_to_vega(), do: :erlang.nif_error(:nif_not_loaded)
+  def vegalite_to_vega(_vl_json_spec), do: :erlang.nif_error(:nif_not_loaded)
 end
