@@ -150,6 +150,24 @@ fn vega_to_jpeg(
     };
 }
 
+#[rustler::nif(schedule = "DirtyCpu")]
+fn vega_to_pdf(vega_spec: String) -> Either<BinaryResultTuple, StringResultTuple> {
+    use Either::{BinaryTuple, StringTuple};
+
+    let vg_spec: serde_json::Value = match serde_json::from_str(vega_spec.as_str()) {
+        Ok(spec) => spec,
+        Err(_err) => return StringTuple(error_tuple("Vega spec is not valid JSON".to_string())),
+    };
+
+    let mut converter = VlConverter::new();
+    let pdf_result = futures::executor::block_on(converter.vega_to_pdf(vg_spec, vg_opts()));
+
+    return match pdf_result {
+        Ok(pdf) => BinaryTuple(ok_binary_tuple(pdf)),
+        Err(err) => StringTuple(error_tuple(err.to_string())),
+    };
+}
+
 // +-------------------------------------+
 // |          VegaLite Functions         |
 // +-------------------------------------+
@@ -250,6 +268,26 @@ fn vegalite_to_jpeg(
 
     return match jpeg_result {
         Ok(jpeg) => BinaryTuple(ok_binary_tuple(jpeg)),
+        Err(err) => StringTuple(error_tuple(err.to_string())),
+    };
+}
+
+#[rustler::nif(schedule = "DirtyCpu")]
+fn vegalite_to_pdf(vega_lite_spec: String) -> Either<BinaryResultTuple, StringResultTuple> {
+    use Either::{BinaryTuple, StringTuple};
+
+    let vl_spec: serde_json::Value = match serde_json::from_str(vega_lite_spec.as_str()) {
+        Ok(spec) => spec,
+        Err(_err) => {
+            return StringTuple(error_tuple("VegaLite spec is not valid JSON".to_string()))
+        }
+    };
+
+    let mut converter = VlConverter::new();
+    let pdf_result = futures::executor::block_on(converter.vegalite_to_pdf(vl_spec, vl_opts()));
+
+    return match pdf_result {
+        Ok(pdf) => BinaryTuple(ok_binary_tuple(pdf)),
         Err(err) => StringTuple(error_tuple(err.to_string())),
     };
 }
