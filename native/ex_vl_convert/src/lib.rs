@@ -52,13 +52,13 @@ impl Encoder for Either<BinaryResultTuple, StringResultTuple> {
 
 #[rustler::nif(schedule = "DirtyCpu")]
 fn vega_to_svg(vega_spec: String) -> StringResultTuple {
-    let vl_spec: serde_json::Value = match serde_json::from_str(vega_spec.as_str()) {
+    let vg_spec: serde_json::Value = match serde_json::from_str(vega_spec.as_str()) {
         Ok(spec) => spec,
         Err(_err) => return error_tuple("Vega spec is not valid JSON".to_string()),
     };
 
     let mut converter = VlConverter::new();
-    let svg_result = futures::executor::block_on(converter.vega_to_svg(vl_spec, vg_opts()));
+    let svg_result = futures::executor::block_on(converter.vega_to_svg(vg_spec, vg_opts()));
 
     return match svg_result {
         Ok(svg) => ok_string_tuple(svg),
@@ -74,21 +74,50 @@ fn vega_to_png(
 ) -> Either<BinaryResultTuple, StringResultTuple> {
     use Either::{BinaryTuple, StringTuple};
 
-    let vl_spec: serde_json::Value = match serde_json::from_str(vega_spec.as_str()) {
+    let vg_spec: serde_json::Value = match serde_json::from_str(vega_spec.as_str()) {
         Ok(spec) => spec,
         Err(_err) => return StringTuple(error_tuple("Vega spec is not valid JSON".to_string())),
     };
 
     let mut converter = VlConverter::new();
-    let png_result = futures::executor::block_on(converter.vega_to_png(
-        vl_spec,
+    let jpeg_result = futures::executor::block_on(converter.vega_to_png(
+        vg_spec,
         vg_opts(),
         Some(scale),
         Some(ppi),
     ));
 
-    return match png_result {
-        Ok(svg) => BinaryTuple(ok_binary_tuple(svg)),
+    return match jpeg_result {
+        Ok(jpeg) => BinaryTuple(ok_binary_tuple(jpeg)),
+        Err(err) => StringTuple(error_tuple(err.to_string())),
+    };
+}
+
+#[rustler::nif(schedule = "DirtyCpu")]
+fn vega_to_jpeg(
+    vega_spec: String,
+    scale: f32,
+    quality: u8,
+) -> Either<BinaryResultTuple, StringResultTuple> {
+    use Either::{BinaryTuple, StringTuple};
+
+    let vg_spec: serde_json::Value = match serde_json::from_str(vega_spec.as_str()) {
+        Ok(spec) => spec,
+        Err(_err) => {
+            return StringTuple(error_tuple("VegaLite spec is not valid JSON".to_string()))
+        }
+    };
+
+    let mut converter = VlConverter::new();
+    let jpeg_result = futures::executor::block_on(converter.vega_to_jpeg(
+        vg_spec,
+        vg_opts(),
+        Some(scale),
+        Some(quality),
+    ));
+
+    return match jpeg_result {
+        Ok(jpeg) => BinaryTuple(ok_binary_tuple(jpeg)),
         Err(err) => StringTuple(error_tuple(err.to_string())),
     };
 }
@@ -137,7 +166,36 @@ fn vegalite_to_png(
     ));
 
     return match png_result {
-        Ok(svg) => BinaryTuple(ok_binary_tuple(svg)),
+        Ok(png) => BinaryTuple(ok_binary_tuple(png)),
+        Err(err) => StringTuple(error_tuple(err.to_string())),
+    };
+}
+
+#[rustler::nif(schedule = "DirtyCpu")]
+fn vegalite_to_jpeg(
+    vega_lite_spec: String,
+    scale: f32,
+    quality: u8,
+) -> Either<BinaryResultTuple, StringResultTuple> {
+    use Either::{BinaryTuple, StringTuple};
+
+    let vl_spec: serde_json::Value = match serde_json::from_str(vega_lite_spec.as_str()) {
+        Ok(spec) => spec,
+        Err(_err) => {
+            return StringTuple(error_tuple("VegaLite spec is not valid JSON".to_string()))
+        }
+    };
+
+    let mut converter = VlConverter::new();
+    let jpeg_result = futures::executor::block_on(converter.vegalite_to_jpeg(
+        vl_spec,
+        vl_opts(),
+        Some(scale),
+        Some(quality),
+    ));
+
+    return match jpeg_result {
+        Ok(jpeg) => BinaryTuple(ok_binary_tuple(jpeg)),
         Err(err) => StringTuple(error_tuple(err.to_string())),
     };
 }
@@ -183,36 +241,6 @@ fn vl_opts() -> VlOpts {
 rustler::init!("Elixir.VegaLite.Native");
 
 // TODO: Clean this up once things get migrated over
-// #[rustler::nif(schedule = "DirtyCpu")]
-// fn to_jpeg(vega_lite_spec: String, version: String, scale: f32) -> BinaryResultTuple {
-//     let mut converter = VlConverter::new();
-//
-//     let vl_spec: serde_json::Value = serde_json::from_str(vega_lite_spec.as_str()).unwrap();
-//
-//     let vl_version = match version.as_str() {
-//         "5.16" => VlVersion::v5_16,
-//         "5.17" => VlVersion::v5_17,
-//         "5.18" => VlVersion::v5_18,
-//         _ => VlVersion::v5_19,
-//     };
-//
-//     let jpeg = futures::executor::block_on(converter.vegalite_to_jpeg(
-//         vl_spec,
-//         VlOpts {
-//             vl_version: vl_version,
-//             ..Default::default()
-//         },
-//         Some(scale),
-//         None,
-//     ))
-//     .expect("Failed to perform Vega-Lite to Vega conversion");
-//
-//     return BinaryResultTuple {
-//         lhs: atoms::ok(),
-//         rhs: jpeg,
-//     };
-// }
-//
 // #[rustler::nif(schedule = "DirtyCpu")]
 // fn to_webp(vega_lite_spec: String, version: String, scale: f32) -> BinaryResultTuple {
 //     let mut converter = VlConverter::new();
