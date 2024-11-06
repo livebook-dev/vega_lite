@@ -10,9 +10,10 @@ defmodule VegaLite.Export do
 
   @doc """
   Saves a `VegaLite` specification to file in one of
-  the supported formats. Any additional options provided beyond
-  `:format` are passed to the functions that export to the desired
-  format.
+  the supported formats.
+
+  Any additional options provided beyond `:format` are passed to
+  the functions that export to the desired format.
 
   ## Options
 
