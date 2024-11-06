@@ -66,6 +66,33 @@ fn vega_to_svg(vega_spec: String) -> StringResultTuple {
     };
 }
 
+#[rustler::nif(schedule = "DirtyCpu")]
+fn vega_to_png(
+    vega_spec: String,
+    scale: f32,
+    ppi: f32,
+) -> Either<BinaryResultTuple, StringResultTuple> {
+    use Either::{BinaryTuple, StringTuple};
+
+    let vl_spec: serde_json::Value = match serde_json::from_str(vega_spec.as_str()) {
+        Ok(spec) => spec,
+        Err(_err) => return StringTuple(error_tuple("Vega spec is not valid JSON".to_string())),
+    };
+
+    let mut converter = VlConverter::new();
+    let png_result = futures::executor::block_on(converter.vega_to_png(
+        vl_spec,
+        vg_opts(),
+        Some(scale),
+        Some(ppi),
+    ));
+
+    return match png_result {
+        Ok(svg) => BinaryTuple(ok_binary_tuple(svg)),
+        Err(err) => StringTuple(error_tuple(err.to_string())),
+    };
+}
+
 // +-------------------------------------+
 // |          VegaLite Functions         |
 // +-------------------------------------+
