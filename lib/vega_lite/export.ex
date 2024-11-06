@@ -2,83 +2,83 @@ defmodule VegaLite.Export do
   @moduledoc """
   Various export methods for a `VegaLite` specification.
 
-  All of the export functions depend on the `:jason` package.
-  Additionally the PNG, SVG and PDF exports rely on npm packages,
-  so you will need Node.js, `npm`, and the following dependencies:
-
-  ```console
-  $ npm install -g vega vega-lite canvas
-  ```
-
-  Alternatively you can install the dependencies in a local directory:
-
-  ```console
-  $ npm install vega vega-lite canvas
-  ```
+  All of the exports are performed via a Rustler NIF that wraps the
+  [vl-convert-rs](https://github.com/vega/vl-convert) Rust library.
   """
 
-  alias VegaLite.Utils
+  alias VegaLite.Native
 
   @doc """
   Saves a `VegaLite` specification to file in one of
-  the supported formats.
+  the supported formats. Any additional options provided beyond
+  `:format` are passed to the functions that export to the desired
+  format.
 
   ## Options
 
     * `:format` - the format to export the graphic as,
-      must be either of: `:json`, `:html`, `:png`, `:svg`, `:pdf`.
-      By default the format is inferred from the file extension.
-
-    * `:local_npm_prefix` - a relative path pointing to a local npm project directory
-      where the necessary npm packages are installed. For instance, in Phoenix projects
-      you may want to pass `local_npm_prefix: "assets"`. By default the npm packages
-      are searched for in the current directory and globally.
-
+      must be either of: `:json`, `:html`, `:png`, `:svg`, `:pdf`,
+      `:jpeg`, `:jpg`. By default the format is inferred from the
+      file extension.
   """
   @spec save!(VegaLite.t(), binary(), keyword()) :: :ok
   def save!(vl, path, opts \\ []) do
     {format, opts} =
       Keyword.pop_lazy(opts, :format, fn ->
-        path |> Path.extname() |> String.trim_leading(".") |> String.to_existing_atom()
+        path
+        |> Path.extname()
+        |> String.trim_leading(".")
+        |> String.to_existing_atom()
       end)
 
     content =
       case format do
         :json ->
-          to_json(vl)
+          to_json(vl, opts)
 
         :html ->
-          to_html(vl)
+          to_html(vl, opts)
 
         :png ->
           to_png(vl, opts)
 
         :svg ->
-          to_svg(vl, opts)
+          to_svg(vl)
 
         :pdf ->
-          to_pdf(vl, opts)
+          to_pdf(vl)
+
+        jpeg when jpeg in [:jpeg, :jpg] ->
+          to_jpeg(vl, opts)
 
         _ ->
           raise ArgumentError,
-                "unsupported export format, expected :json, :html, :png, :svg or :pdf, got: #{inspect(format)}"
+                "unsupported export format, expected :json, :html, :png, :svg, :pdf, :jpeg or :jpg got: #{inspect(format)}"
       end
 
     File.write!(path, content)
   end
 
-  @compile {:no_warn_undefined, {Jason, :encode!, 1}}
-
   @doc """
   Returns the underlying Vega-Lite specification as JSON.
-  """
-  @spec to_json(VegaLite.t()) :: String.t()
-  def to_json(vl) do
-    Utils.assert_jason!("to_json/1")
 
-    vl
-    |> VegaLite.to_spec()
-    |> Jason.encode!()
+  ## Options
+
+    * `:target` - specifies whether JSON export is in the VegaLite
+    format or Vega. Valid options are `:vega_lite` or `:vega`. Default
+    is `:vega_lite`.
+  """
+  @spec to_json(vl :: VegaLite.t(), opts :: keyword()) :: String.t()
+  def to_json(vl, opts \\ []) do
+    vega_lite_json =
+      vl
+      |> VegaLite.to_spec()
+      |> Jason.encode!()
+
+    case Keyword.get(opts, :target, :vega_lite) do
+      :vega_lite -> vega_lite_json
+      :vega -> Native.vegalite_to_vega(vega_lite_json)
+    end
   end
 
   @doc """
@@ -86,146 +86,87 @@ defmodule VegaLite.Export do
 
   The HTML page loads necessary JavaScript dependencies from a CDN
   and then renders the graphic in a root element.
+
+  ## Options
+
+    * `:bundle` - Configures whether the VegaLite client side JS library is
+      embedded in the document or if it is pulled down from the CDN. Default
+      is `true`.
+
+    * `:renderer` - This configuration determines how the VegaLite
+      chart is rendered in the HTML document. Possible values are: `:svg`,
+      `:canvas`, or `:hybrid`. Default is `:svg`.
   """
   @spec to_html(VegaLite.t()) :: binary()
-  def to_html(vl) do
-    json = to_json(vl)
+  def to_html(vl, opts \\ []) do
+    bundle = Keyword.get(opts, :bundle, true)
+    renderer = Keyword.get(opts, :renderer, :svg)
 
-    """
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Vega-Lite graphic</title>
-      <script src="https://cdn.jsdelivr.net/npm/vega@5.28.0"></script>
-      <script src="https://cdn.jsdelivr.net/npm/vega-lite@5.18.0"></script>
-      <script src="https://cdn.jsdelivr.net/npm/vega-embed@6.24.0"></script>
-    </head>
-    <body>
-      <div id="graphic"></div>
-      <script type="text/javascript">
-        var spec = JSON.parse("#{escape_double_quotes(json)}");
-        vegaEmbed("#graphic", spec);
-      </script>
-    </body>
-    </html>
-    """
-  end
-
-  defp escape_double_quotes(json) do
-    String.replace(json, ~s{"}, ~s{\\"})
+    vl
+    |> to_json()
+    |> Native.vegalite_to_html(bundle, renderer)
   end
 
   @doc """
   Renders the given graphic as a PNG image and returns
   its binary content.
 
-  Relies on the `npm` packages mentioned above.
-
   ## Options
 
-    * `:local_npm_prefix` - a relative path pointing to a local npm project directory
-      where the necessary npm packages are installed. For instance, in Phoenix projects
-      you may want to pass `local_npm_prefix: "assets"`. By default the npm packages
-      are searched for in the current directory and globally.
+    * `:scale` - The image scale factor. Default is `1.0`.
 
+    * `:ppi` - The pixels per inch. Default is `72.0`.
   """
   @spec to_png(VegaLite.t(), keyword()) :: binary()
   def to_png(vl, opts \\ []) do
-    node_convert(vl, "png", "to_png/1", opts)
+    scale = Keyword.get(opts, :scale, 1.0)
+    ppi = Keyword.get(opts, :ppi, 72.0)
+
+    vl
+    |> to_json()
+    |> Native.vegalite_to_png(scale, ppi)
   end
 
   @doc """
   Renders the given graphic as an SVG image and returns
   its binary content.
-
-  Relies on the `npm` packages mentioned above.
-
-  ## Options
-
-    * `:local_npm_prefix` - a relative path pointing to a local npm project directory
-      where the necessary npm packages are installed. For instance, in Phoenix projects
-      you may want to pass `local_npm_prefix: "assets"`. By default the npm packages
-      are searched for in the current directory and globally.
-
   """
-  @spec to_svg(VegaLite.t(), keyword()) :: binary()
-  def to_svg(vl, opts \\ []) do
-    node_convert(vl, "svg", "to_svg/1", opts)
+  @spec to_svg(VegaLite.t()) :: binary()
+  def to_svg(vl) do
+    vl
+    |> to_json()
+    |> Native.vegalite_to_svg()
   end
 
   @doc """
-  Renders the given graphic into a PDF and returns its
-  binary content.
+  Renders the given graphic as a PDF and returns
+  its binary content.
+  """
+  @spec to_pdf(VegaLite.t()) :: binary()
+  def to_pdf(vl) do
+    vl
+    |> to_json()
+    |> Native.vegalite_to_pdf()
+  end
 
-  Relies on the `npm` packages mentioned above.
+  @doc """
+  Renders the given graphic as a JPEG image and returns
+  its binary content.
 
   ## Options
 
-    * `:local_npm_prefix` - a relative path pointing to a local npm project directory
-      where the necessary npm packages are installed. For instance, in Phoenix projects
-      you may want to pass `local_npm_prefix: "assets"`. By default the npm packages
-      are searched for in the current directory and globally.
+    * `:scale` - The image scale factor. Default is `1.0`.
 
+    * `:quality` - The quality of the generated JPEG between 0
+      (worst) and 100 (best). Default is `90`.
   """
-  @spec to_pdf(VegaLite.t(), keyword()) :: binary()
-  def to_pdf(vl, opts \\ []) do
-    node_convert(vl, "pdf", "to_pdf/1", opts)
-  end
+  @spec to_jpeg(VegaLite.t(), keyword()) :: binary()
+  def to_jpeg(vl, opts \\ []) do
+    scale = Keyword.get(opts, :scale, 1.0)
+    quality = Keyword.get(opts, :quality, 90)
 
-  defp node_convert(vl, format, fn_name, opts) do
-    json = to_json(vl)
-    json_file = System.tmp_dir!() |> Path.join("vega-lite-#{Utils.process_timestamp()}.json")
-    File.write!(json_file, json)
-
-    output = npm_exec!("vl2#{format}", [json_file], fn_name, opts)
-
-    _ = File.rm(json_file)
-
-    output
-  end
-
-  defp npm_exec!(command, args, fn_name, opts) do
-    npm_path = System.find_executable("npm")
-
-    unless npm_path do
-      raise RuntimeError,
-            "#{fn_name} requires Node.js and npm to be installed and available in PATH"
-    end
-
-    prefix_args =
-      case opts[:local_npm_prefix] do
-        nil -> []
-        path -> ["--prefix", path]
-      end
-
-    case run_cmd(
-           npm_path,
-           ["exec", "--no", "--offline"] ++ prefix_args ++ ["--", command] ++ args
-         ) do
-      {output, 0} ->
-        output
-
-      {_output, code} ->
-        raise RuntimeError, """
-        #{fn_name} requires #{command} executable from the vega-lite npm package.
-
-        Make sure to install the necessary npm dependencies:
-
-            npm install -g vega vega-lite canvas
-            # or in the current directory
-            npm install vega vega-lite canvas
-
-        npm exec failed with code #{code}. Errors have been logged to standard error
-        """
-    end
-  end
-
-  def run_cmd(script_path, args) do
-    case :os.type() do
-      {:win32, _} -> System.cmd("cmd", ["/C", script_path | args])
-      {_, _} -> System.cmd(script_path, args)
-    end
+    vl
+    |> to_json()
+    |> Native.vegalite_to_png(scale, quality)
   end
 end

@@ -105,8 +105,6 @@ defmodule VegaLite do
 
   defstruct spec: %{"$schema" => @schema_url}
 
-  alias VegaLite.Utils
-
   @type t :: %__MODULE__{
           spec: spec()
         }
@@ -162,8 +160,6 @@ defmodule VegaLite do
   """
   @spec from_json(String.t()) :: t()
   def from_json(json) do
-    Utils.assert_jason!("from_json/1")
-
     json
     |> Jason.decode!()
     |> from_spec()
