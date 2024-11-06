@@ -69,6 +69,32 @@ fn vega_to_svg(vega_spec: String) -> StringResultTuple {
 }
 
 #[rustler::nif(schedule = "DirtyCpu")]
+fn vega_to_html(vega_spec: String, bundle: bool, renderer: String) -> StringResultTuple {
+    let vg_spec: serde_json::Value = match serde_json::from_str(vega_spec.as_str()) {
+        Ok(spec) => spec,
+        Err(_err) => return error_tuple("Vega spec is not valid JSON".to_string()),
+    };
+
+    let renderer_enum = match renderer.parse() {
+        Ok(renderer_enum) => renderer_enum,
+        Err(_err) => return error_tuple("Invalid renderer provided".to_string()),
+    };
+
+    let mut converter = VlConverter::new();
+    let html_result = futures::executor::block_on(converter.vega_to_html(
+        vg_spec,
+        vg_opts(),
+        bundle,
+        renderer_enum,
+    ));
+
+    return match html_result {
+        Ok(html) => ok_string_tuple(html),
+        Err(err) => error_tuple(err.to_string()),
+    };
+}
+
+#[rustler::nif(schedule = "DirtyCpu")]
 fn vega_to_png(
     vega_spec: String,
     scale: f32,
@@ -140,6 +166,32 @@ fn vegalite_to_svg(vega_lite_spec: String) -> StringResultTuple {
 
     return match svg_result {
         Ok(svg) => ok_string_tuple(svg),
+        Err(err) => error_tuple(err.to_string()),
+    };
+}
+
+#[rustler::nif(schedule = "DirtyCpu")]
+fn vegalite_to_html(vega_lite_spec: String, bundle: bool, renderer: String) -> StringResultTuple {
+    let vl_spec: serde_json::Value = match serde_json::from_str(vega_lite_spec.as_str()) {
+        Ok(spec) => spec,
+        Err(_err) => return error_tuple("VegaLite spec is not valid JSON".to_string()),
+    };
+
+    let renderer_enum = match renderer.parse() {
+        Ok(renderer_enum) => renderer_enum,
+        Err(_err) => return error_tuple("Invalid renderer provided".to_string()),
+    };
+
+    let mut converter = VlConverter::new();
+    let html_result = futures::executor::block_on(converter.vegalite_to_html(
+        vl_spec,
+        vl_opts(),
+        bundle,
+        renderer_enum,
+    ));
+
+    return match html_result {
+        Ok(html) => ok_string_tuple(html),
         Err(err) => error_tuple(err.to_string()),
     };
 }
