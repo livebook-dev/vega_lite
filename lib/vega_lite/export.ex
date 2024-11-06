@@ -105,7 +105,7 @@ defmodule VegaLite.Export do
   @spec to_html(VegaLite.t()) :: binary()
   def to_html(vl, opts \\ []) do
     bundle = Keyword.get(opts, :bundle, true)
-    renderer = Keyword.get(opts, :renderer, :svg)
+    renderer = opts |> Keyword.get(:renderer, :svg) |> to_string()
 
     {:ok, html} =
       vl
