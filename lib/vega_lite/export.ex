@@ -77,8 +77,12 @@ defmodule VegaLite.Export do
       |> Jason.encode!()
 
     case Keyword.get(opts, :target, :vega_lite) do
-      :vega_lite -> vega_lite_json
-      :vega -> Native.vegalite_to_vega(vega_lite_json)
+      :vega_lite ->
+        vega_lite_json
+
+      :vega ->
+        {:ok, vega_json} = Native.vegalite_to_vega(vega_lite_json)
+        vega_json
     end
   end
 
@@ -103,9 +107,12 @@ defmodule VegaLite.Export do
     bundle = Keyword.get(opts, :bundle, true)
     renderer = Keyword.get(opts, :renderer, :svg)
 
-    vl
-    |> to_json()
-    |> Native.vegalite_to_html(bundle, renderer)
+    {:ok, html} =
+      vl
+      |> to_json()
+      |> Native.vegalite_to_html(bundle, renderer)
+
+    html
   end
 
   @doc """
@@ -123,9 +130,12 @@ defmodule VegaLite.Export do
     scale = Keyword.get(opts, :scale, 1.0)
     ppi = Keyword.get(opts, :ppi, 72.0)
 
-    vl
-    |> to_json()
-    |> Native.vegalite_to_png(scale, ppi)
+    {:ok, png} =
+      vl
+      |> to_json()
+      |> Native.vegalite_to_png(scale, ppi)
+
+    png
   end
 
   @doc """
@@ -134,9 +144,12 @@ defmodule VegaLite.Export do
   """
   @spec to_svg(VegaLite.t()) :: binary()
   def to_svg(vl) do
-    vl
-    |> to_json()
-    |> Native.vegalite_to_svg()
+    {:ok, svg} =
+      vl
+      |> to_json()
+      |> Native.vegalite_to_svg()
+
+    svg
   end
 
   @doc """
@@ -145,9 +158,12 @@ defmodule VegaLite.Export do
   """
   @spec to_pdf(VegaLite.t()) :: binary()
   def to_pdf(vl) do
-    vl
-    |> to_json()
-    |> Native.vegalite_to_pdf()
+    {:ok, pdf} =
+      vl
+      |> to_json()
+      |> Native.vegalite_to_pdf()
+
+    pdf
   end
 
   @doc """
@@ -166,8 +182,11 @@ defmodule VegaLite.Export do
     scale = Keyword.get(opts, :scale, 1.0)
     quality = Keyword.get(opts, :quality, 90)
 
-    vl
-    |> to_json()
-    |> Native.vegalite_to_png(scale, quality)
+    {:ok, jpeg} =
+      vl
+      |> to_json()
+      |> Native.vegalite_to_png(scale, quality)
+
+    jpeg
   end
 end
