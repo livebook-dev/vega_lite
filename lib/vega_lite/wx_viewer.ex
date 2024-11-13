@@ -1,3 +1,4 @@
+# TODO: remove on v1.0
 defmodule VegaLite.WxViewer do
   @moduledoc false
 

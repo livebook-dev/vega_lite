@@ -99,6 +99,12 @@ defmodule VegaLite do
   `axis: [label_angle: -45]`, this library will automatically
   rewrite it `labelAngle`, which is the name used by the VegaLite
   specification.
+
+  ## Export
+
+  `VegaLite` graphics can be exported into various formats, such as
+  SVG, PNG and PDF thorugh the [`:vega_lite_convert`](https://hexdocs.pm/vega_lite_convert)
+  package.
   """
 
   @schema_url "https://vega.github.io/schema/vega-lite/v5.json"

@@ -1,25 +1,14 @@
+# TODO: remove on v1.0
 defmodule VegaLite.Viewer do
-  @moduledoc """
-  Graphics rendering using Erlang's `:wx` bindings.
+  @moduledoc false
 
-  This method is useful for viewing graphics in scripts
-  and IEx sessions. Note it requires Erlang/OTP 24+ with
-  a recent WxWidgets installation with webview support.
-  """
-
-  @doc """
-  Renders a `VegaLite` specification in GUI window widget.
-
-  Requires Erlang compilation to include the `:wx` module.
-  """
+  @deprecated "Use VegaLite.Convert.open_viewer/1 in from the :vega_lite_convert package instead"
   @spec show(VegaLite.t()) :: :ok | :error
   def show(vl) do
     with {:ok, _pid} <- start_wx_viewer(vl), do: :ok
   end
 
-  @doc """
-  Same as `show/1`, but blocks until the window widget is closed.
-  """
+  @deprecated "Use VegaLite.Convert.open_viewer_and_wait/1 in from the :vega_lite_convert package instead"
   @spec show_and_wait(VegaLite.t()) :: :ok | :error
   def show_and_wait(vl) do
     with {:ok, pid} <- start_wx_viewer(vl) do
@@ -33,7 +22,7 @@ defmodule VegaLite.Viewer do
 
   defp start_wx_viewer(vl) do
     vl
-    |> VegaLite.Export.to_html()
+    |> VegaLite.Export.to_html_no_deprecation()
     |> VegaLite.WxViewer.start()
   end
 end
