@@ -1,40 +1,10 @@
+# TODO: remove on v1.0
 defmodule VegaLite.Export do
-  @moduledoc """
-  Various export methods for a `VegaLite` specification.
-
-  All of the export functions depend on the `:jason` package.
-  Additionally the PNG, SVG and PDF exports rely on npm packages,
-  so you will need Node.js, `npm`, and the following dependencies:
-
-  ```console
-  $ npm install -g vega vega-lite canvas
-  ```
-
-  Alternatively you can install the dependencies in a local directory:
-
-  ```console
-  $ npm install vega vega-lite canvas
-  ```
-  """
+  @moduledoc false
 
   alias VegaLite.Utils
 
-  @doc """
-  Saves a `VegaLite` specification to file in one of
-  the supported formats.
-
-  ## Options
-
-    * `:format` - the format to export the graphic as,
-      must be either of: `:json`, `:html`, `:png`, `:svg`, `:pdf`.
-      By default the format is inferred from the file extension.
-
-    * `:local_npm_prefix` - a relative path pointing to a local npm project directory
-      where the necessary npm packages are installed. For instance, in Phoenix projects
-      you may want to pass `local_npm_prefix: "assets"`. By default the npm packages
-      are searched for in the current directory and globally.
-
-  """
+  @deprecated "Use VegaLite.Convert.save!/3 in from the :vega_lite_convert package instead"
   @spec save!(VegaLite.t(), binary(), keyword()) :: :ok
   def save!(vl, path, opts \\ []) do
     {format, opts} =
@@ -69,9 +39,7 @@ defmodule VegaLite.Export do
 
   @compile {:no_warn_undefined, {Jason, :encode!, 1}}
 
-  @doc """
-  Returns the underlying Vega-Lite specification as JSON.
-  """
+  @deprecated "Use VegaLite.Convert.to_json/1 in from the :vega_lite_convert package instead"
   @spec to_json(VegaLite.t()) :: String.t()
   def to_json(vl) do
     Utils.assert_jason!("to_json/1")
@@ -81,12 +49,7 @@ defmodule VegaLite.Export do
     |> Jason.encode!()
   end
 
-  @doc """
-  Builds an HTML page that renders the given graphic.
-
-  The HTML page loads necessary JavaScript dependencies from a CDN
-  and then renders the graphic in a root element.
-  """
+  @deprecated "Use VegaLite.Convert.to_html/1 in from the :vega_lite_convert package instead"
   @spec to_html(VegaLite.t()) :: binary()
   def to_html(vl) do
     json = to_json(vl)
@@ -113,62 +76,26 @@ defmodule VegaLite.Export do
     """
   end
 
+  @doc false
+  def to_html_no_deprecation(vl), do: to_html(vl)
+
   defp escape_double_quotes(json) do
     String.replace(json, ~s{"}, ~s{\\"})
   end
 
-  @doc """
-  Renders the given graphic as a PNG image and returns
-  its binary content.
-
-  Relies on the `npm` packages mentioned above.
-
-  ## Options
-
-    * `:local_npm_prefix` - a relative path pointing to a local npm project directory
-      where the necessary npm packages are installed. For instance, in Phoenix projects
-      you may want to pass `local_npm_prefix: "assets"`. By default the npm packages
-      are searched for in the current directory and globally.
-
-  """
+  @deprecated "Use VegaLite.Convert.to_png/1 in from the :vega_lite_convert package instead"
   @spec to_png(VegaLite.t(), keyword()) :: binary()
   def to_png(vl, opts \\ []) do
     node_convert(vl, "png", "to_png/1", opts)
   end
 
-  @doc """
-  Renders the given graphic as an SVG image and returns
-  its binary content.
-
-  Relies on the `npm` packages mentioned above.
-
-  ## Options
-
-    * `:local_npm_prefix` - a relative path pointing to a local npm project directory
-      where the necessary npm packages are installed. For instance, in Phoenix projects
-      you may want to pass `local_npm_prefix: "assets"`. By default the npm packages
-      are searched for in the current directory and globally.
-
-  """
+  @deprecated "Use VegaLite.Convert.to_svg/1 in from the :vega_lite_convert package instead"
   @spec to_svg(VegaLite.t(), keyword()) :: binary()
   def to_svg(vl, opts \\ []) do
     node_convert(vl, "svg", "to_svg/1", opts)
   end
 
-  @doc """
-  Renders the given graphic into a PDF and returns its
-  binary content.
-
-  Relies on the `npm` packages mentioned above.
-
-  ## Options
-
-    * `:local_npm_prefix` - a relative path pointing to a local npm project directory
-      where the necessary npm packages are installed. For instance, in Phoenix projects
-      you may want to pass `local_npm_prefix: "assets"`. By default the npm packages
-      are searched for in the current directory and globally.
-
-  """
+  @deprecated "Use VegaLite.Convert.to_pdf/1 in from the :vega_lite_convert package instead"
   @spec to_pdf(VegaLite.t(), keyword()) :: binary()
   def to_pdf(vl, opts \\ []) do
     node_convert(vl, "pdf", "to_pdf/1", opts)
