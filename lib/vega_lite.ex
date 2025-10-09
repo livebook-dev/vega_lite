@@ -107,7 +107,7 @@ defmodule VegaLite do
   package.
   """
 
-  @schema_url "https://vega.github.io/schema/vega-lite/v5.json"
+  @schema_url "https://vega.github.io/schema/vega-lite/v6.json"
 
   defstruct spec: %{"$schema" => @schema_url}
 
