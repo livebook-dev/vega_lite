@@ -13,7 +13,7 @@ defmodule VegaLite do
 
   ## Composing graphics
 
-  We offers a light-weight pipeline API akin to the JSON specification.
+  We offer a light-weight pipeline API akin to the JSON specification.
   Translating existing Vega-Lite specifications to such specification
   should be very intuitive in most cases.
 
@@ -103,7 +103,7 @@ defmodule VegaLite do
   ## Export
 
   `VegaLite` graphics can be exported into various formats, such as
-  SVG, PNG and PDF thorugh the [`:vega_lite_convert`](https://hexdocs.pm/vega_lite_convert)
+  SVG, PNG and PDF through the [`:vega_lite_convert`](https://hexdocs.pm/vega_lite_convert)
   package.
   """
 
