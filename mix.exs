@@ -13,9 +13,7 @@ defmodule VegaLite.MixProject do
       elixir: "~> 1.12",
       deps: deps(),
       docs: docs(),
-      package: package(),
-      # Modules used by VegaLite.WxViewer if available
-      xref: [exclude: [:wx, :wx_object, :wxFrame, :wxWebView]]
+      package: package()
     ]
   end
 
