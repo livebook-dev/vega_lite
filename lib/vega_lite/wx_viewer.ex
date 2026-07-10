@@ -2,6 +2,8 @@
 defmodule VegaLite.WxViewer do
   @moduledoc false
 
+  @compile {:no_warn_undefined, [:wx, :wx_object, :wxFrame, :wxWebView]}
+
   cond do
     not Code.ensure_loaded?(:wx) ->
       def start(_html) do
